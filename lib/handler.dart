@@ -34,7 +34,7 @@ class _HandlerState extends State<Handler> {
         child: Container(
           height: widget.isHorizontal ? widget.size : widget.parentSize,
           width: widget.isHorizontal ? widget.parentSize : widget.size,
-          color: Colors.black26,
+          color: Colors.black,
         ),
       ),
     );

@@ -88,33 +88,36 @@ class Layout {
       child: ValueListenableBuilder(
           valueListenable: horizontalResizer,
           builder: (_, double blockWidth, Widget? child) {
-            if (hasRight) cell.width = blockWidth / parentWidth;
+            final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
+            if (hasRight) cell.width = constrainedWidth / parentWidth;
             return Row(
               children: [
                 ValueListenableBuilder(
                     valueListenable: verticalResizer,
                     builder: (_, double blockHeight, Widget? child) {
-                      if (hasBottom) cell.height = blockHeight / parentHeight;
+                      final constrainedHeight =
+                          blockHeight > handlerSize ? blockHeight : handlerSize;
+                      if (hasBottom) cell.height = constrainedHeight / parentHeight;
                       return Column(
                         children: [
                           Container(
-                            width: blockWidth,
-                            height: blockHeight,
+                            width: constrainedWidth,
+                            height: constrainedHeight,
                             color: Color(
                               cell.colorCode > 0 ? cell.colorCode : rndColorCode(),
                             ).withOpacity(1),
                           ),
                           if (hasBottom) ...[
                             Handler(
-                              blockWidth,
+                              constrainedWidth,
                               resizer: verticalResizer,
                               isHorizontal: true,
                               size: handlerSize,
                             ),
                             positionWidgetsFrom(
                               cell.bottom!,
-                              parentWidth: blockWidth,
-                              parentHeight: parentHeight - (blockHeight + handleDeltaY),
+                              parentWidth: constrainedWidth,
+                              parentHeight: parentHeight - (constrainedHeight + handleDeltaY),
                             ),
                           ]
                         ],
@@ -129,7 +132,7 @@ class Layout {
                   ),
                   positionWidgetsFrom(
                     cell.right!,
-                    parentWidth: parentWidth - (blockWidth + handleDeltaX),
+                    parentWidth: parentWidth - (constrainedWidth + handleDeltaX),
                     parentHeight: parentHeight,
                   ),
                 ],
