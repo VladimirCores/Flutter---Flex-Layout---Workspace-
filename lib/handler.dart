@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mix/mix.dart';
 
 class Handler extends StatefulWidget {
   const Handler(
@@ -25,19 +24,17 @@ class _HandlerState extends State<Handler> {
     return Listener(
       behavior: HitTestBehavior.deferToChild,
       onPointerMove: (_) {
-        print('DragHandle > onPointerMove: ${_.position} - ${_.delta}');
+        // print('DragHandle > onPointerMove: ${_.position} - ${_.delta}');
         final delta = widget.isHorizontal ? _.delta.dy : _.delta.dx;
         widget.resizer.value += delta;
       },
       child: MouseRegion(
         cursor:
             widget.isHorizontal ? SystemMouseCursors.resizeRow : SystemMouseCursors.resizeColumn,
-        child: Box(
-          mix: Mix.chooser(
-            condition: widget.isHorizontal,
-            ifTrue: Mix(h(widget.size), w(widget.parentSize)),
-            ifFalse: Mix(w(widget.size), h(widget.parentSize)),
-          ).apply(Mix(bgColor(Colors.transparent))),
+        child: Container(
+          height: widget.isHorizontal ? widget.size : widget.parentSize,
+          width: widget.isHorizontal ? widget.parentSize : widget.size,
+          color: Colors.black26,
         ),
       ),
     );

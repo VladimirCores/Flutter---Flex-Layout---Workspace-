@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:workspace_layout/layout.dart';
+import 'package:workspace_layout/utils.dart';
 
 void main() {
   runApp(WorkspaceLayout());
@@ -7,8 +8,8 @@ void main() {
 
 class WorkspaceLayout extends StatelessWidget {
   WorkspaceLayout({super.key}) {
-    // generateCell() => LayoutCell(colorCode: rndColorCode());
-    generateCell() => LayoutCell();
+    generateCell() => LayoutCell(colorCode: rndColorCode());
+    // generateCell() => LayoutCell();
     final c1 = generateCell();
     final c2 = generateCell();
     final c3 = generateCell();

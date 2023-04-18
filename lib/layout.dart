@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mix/mix.dart';
 import 'package:workspace_layout/handler.dart';
 import 'package:workspace_layout/utils.dart';
 
@@ -83,31 +82,27 @@ class Layout {
     ValueNotifier<double> verticalResizer = ValueNotifier(
         hasHeight ? cell.height * parentHeight : parentHeight / (hasBottom ? 2 : 1) - handleDeltaY);
 
-    Widget items = Box(
-      mix: Mix(
-        w(parentWidth),
-        h(parentHeight),
-        bgColor(Colors.white),
-      ),
+    Widget items = SizedBox(
+      width: parentWidth,
+      height: parentHeight,
       child: ValueListenableBuilder(
           valueListenable: horizontalResizer,
           builder: (_, double blockWidth, Widget? child) {
             if (hasRight) cell.width = blockWidth / parentWidth;
-            return HBox(
+            return Row(
               children: [
                 ValueListenableBuilder(
                     valueListenable: verticalResizer,
                     builder: (_, double blockHeight, Widget? child) {
                       if (hasBottom) cell.height = blockHeight / parentHeight;
-                      return VBox(
+                      return Column(
                         children: [
-                          Box(
-                            mix: Mix(
-                              w(blockWidth),
-                              h(blockHeight),
-                              bgColor(Color(cell.colorCode > 0 ? cell.colorCode : rndColorCode())
-                                  .withOpacity(1)),
-                            ),
+                          Container(
+                            width: blockWidth,
+                            height: blockHeight,
+                            color: Color(
+                              cell.colorCode > 0 ? cell.colorCode : rndColorCode(),
+                            ).withOpacity(1),
                           ),
                           if (hasBottom) ...[
                             Handler(
