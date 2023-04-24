@@ -108,9 +108,10 @@ class Layout {
                                     return Stack(
                                       children: [
                                         cell.widget ?? Container(),
-                                        selectedCellValue != null && selectedCellValue != cell
-                                            ? const LayoutRegions()
-                                            : Container(),
+                                        LayoutRegions(cell)
+                                        // selectedCellValue != null && selectedCellValue != cell
+                                        //     ? LayoutRegions(cell)
+                                        //     : Container(),
                                       ],
                                     );
                                   }),
