@@ -1,24 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:workspace_layout/cell/cell_header.dart';
+import 'package:workspace_layout/cell/layout_cell.dart';
 import 'package:workspace_layout/handler.dart';
+import 'package:workspace_layout/regions.dart';
 import 'package:workspace_layout/utils.dart';
-
-class LayoutCell {
-  LayoutCell({this.right, this.bottom, this.width = -1, this.height = -1, this.colorCode = -1});
-
-  double parentWidth = -1;
-  double parentHeight = -1;
-
-  get contentWidth => width * parentWidth;
-  get contentHeight => height * parentHeight;
-
-  double width;
-  double height;
-  int colorCode;
-
-  LayoutCell? right;
-  LayoutCell? bottom;
-  LayoutCell? previous;
-}
 
 class Layout {
   Layout();
@@ -27,6 +12,8 @@ class Layout {
   int yCount = 0;
 
   final List<LayoutCell> _items = [];
+
+  ValueNotifier<LayoutCell?> selectedCell = ValueNotifier(null);
 
   LayoutCell get chain => _items.first;
   List<LayoutCell> get cells => _items;
@@ -37,7 +24,10 @@ class Layout {
   }
 
   LayoutCell add(LayoutCell gc) {
-    if (!_items.contains(gc)) _items.add(gc);
+    if (!_items.contains(gc)) {
+      gc.index = _items.length;
+      _items.add(gc);
+    }
     return gc;
   }
 
@@ -86,59 +76,82 @@ class Layout {
       width: parentWidth,
       height: parentHeight,
       child: ValueListenableBuilder(
-          valueListenable: horizontalResizer,
-          builder: (_, double blockWidth, Widget? child) {
-            final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
-            if (hasRight) cell.width = constrainedWidth / parentWidth;
-            return Row(
-              children: [
-                ValueListenableBuilder(
-                    valueListenable: verticalResizer,
-                    builder: (_, double blockHeight, Widget? child) {
-                      final constrainedHeight =
-                          blockHeight > handlerSize ? blockHeight : handlerSize;
-                      if (hasBottom) cell.height = constrainedHeight / parentHeight;
-                      return Column(
-                        children: [
-                          Container(
-                            width: constrainedWidth,
-                            height: constrainedHeight,
-                            color: Color(
-                              cell.colorCode > 0 ? cell.colorCode : rndColorCode(),
-                            ).withOpacity(1),
-                          ),
-                          if (hasBottom) ...[
-                            Handler(
-                              constrainedWidth,
-                              resizer: verticalResizer,
-                              isHorizontal: true,
-                              size: handlerSize,
+        valueListenable: horizontalResizer,
+        builder: (_, double blockWidth, Widget? child) {
+          final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
+          if (hasRight) cell.width = constrainedWidth / parentWidth;
+          return Row(
+            children: [
+              ValueListenableBuilder(
+                valueListenable: verticalResizer,
+                builder: (_, double blockHeight, Widget? child) {
+                  final constrainedHeight = blockHeight > handlerSize ? blockHeight : handlerSize;
+                  if (hasBottom) cell.height = constrainedHeight / parentHeight;
+                  final color = cell.colorCode > 0 ? cell.colorCode : rndColorCode();
+                  return Column(
+                    children: [
+                      Container(
+                        width: constrainedWidth,
+                        height: constrainedHeight,
+                        color: Color(color).withOpacity(1),
+                        child: Column(
+                          children: [
+                            CellHeader(
+                              cell: cell,
+                              title: 'Cell: ${cell.index}',
+                              onCellSelected: selectedCell,
                             ),
-                            positionWidgetsFrom(
-                              cell.bottom!,
-                              parentWidth: constrainedWidth,
-                              parentHeight: parentHeight - (constrainedHeight + handleDeltaY),
+                            Expanded(
+                              child: ValueListenableBuilder(
+                                  valueListenable: selectedCell,
+                                  builder: (_, LayoutCell? selectedCellValue, Widget? child) {
+                                    return Stack(
+                                      children: [
+                                        cell.widget ?? Container(),
+                                        selectedCellValue != null && selectedCellValue != cell
+                                            ? const LayoutRegions()
+                                            : Container(),
+                                      ],
+                                    );
+                                  }),
                             ),
-                          ]
-                        ],
-                      );
-                    }),
-                if (hasRight) ...[
-                  Handler(
-                    parentHeight,
-                    resizer: horizontalResizer,
-                    isHorizontal: false,
-                    size: handlerSize,
-                  ),
-                  positionWidgetsFrom(
-                    cell.right!,
-                    parentWidth: parentWidth - (constrainedWidth + handleDeltaX),
-                    parentHeight: parentHeight,
-                  ),
-                ],
+                          ],
+                        ),
+                      ),
+                      if (hasBottom) ...[
+                        Handler(
+                          constrainedWidth,
+                          resizer: verticalResizer,
+                          isHorizontal: true,
+                          size: handlerSize,
+                        ),
+                        positionWidgetsFrom(
+                          cell.bottom!,
+                          parentWidth: constrainedWidth,
+                          parentHeight: parentHeight - (constrainedHeight + handleDeltaY),
+                        ),
+                      ]
+                    ],
+                  );
+                },
+              ),
+              if (hasRight) ...[
+                Handler(
+                  parentHeight,
+                  resizer: horizontalResizer,
+                  isHorizontal: false,
+                  size: handlerSize,
+                ),
+                positionWidgetsFrom(
+                  cell.right!,
+                  parentWidth: parentWidth - (constrainedWidth + handleDeltaX),
+                  parentHeight: parentHeight,
+                ),
               ],
-            );
-          }),
+            ],
+          );
+        },
+      ),
     );
     return items;
   }
