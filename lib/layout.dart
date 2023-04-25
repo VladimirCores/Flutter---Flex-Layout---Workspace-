@@ -3,7 +3,6 @@ import 'package:workspace_layout/cell/cell_header.dart';
 import 'package:workspace_layout/cell/layout_cell.dart';
 import 'package:workspace_layout/handler.dart';
 import 'package:workspace_layout/regions.dart';
-import 'package:workspace_layout/utils.dart';
 
 class Layout {
   Layout();
@@ -94,6 +93,20 @@ class Layout {
     ValueNotifier<double> verticalResizer = ValueNotifier(
         hasHeight ? cell.height * parentHeight : parentHeight / (hasBottom ? 2 : 1) - handleDeltaY);
 
+    final cellContent = Expanded(
+      child: ValueListenableBuilder(
+        valueListenable: selectedCell,
+        builder: (_, LayoutCell? selected, Widget? child) {
+          return Stack(
+            children: [
+              cell.widget ?? Container(),
+              if (selected != null && selected != cell) LayoutRegions(cell)
+            ],
+          );
+        },
+      ),
+    );
+
     Widget items = SizedBox(
       width: parentWidth,
       height: parentHeight,
@@ -102,6 +115,7 @@ class Layout {
         builder: (_, double blockWidth, Widget? child) {
           final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
           if (hasRight) cell.width = constrainedWidth / parentWidth;
+
           return Row(
             children: [
               ValueListenableBuilder(
@@ -109,14 +123,12 @@ class Layout {
                 builder: (_, double blockHeight, Widget? child) {
                   final constrainedHeight = blockHeight > handlerSize ? blockHeight : handlerSize;
                   if (hasBottom) cell.height = constrainedHeight / parentHeight;
-                  final color = cell.colorCode > 0 ? cell.colorCode : rndColorCode();
                   final isRemovable = cell.hasConnections;
                   return Column(
                     children: [
-                      Container(
+                      SizedBox(
                         width: constrainedWidth,
                         height: constrainedHeight,
-                        color: Color(color).withAlpha(90),
                         child: Column(
                           children: [
                             CellHeader(
@@ -125,21 +137,7 @@ class Layout {
                               onPointerUp: () => selectedCell.value = null,
                               onRemove: isRemovable ? () => removeCell(cell) : null,
                             ),
-                            Expanded(
-                              child: ValueListenableBuilder(
-                                valueListenable: selectedCell,
-                                builder: (_, LayoutCell? selectedCellValue, Widget? child) {
-                                  return Stack(
-                                    children: [
-                                      cell.widget ?? Container(),
-                                      selectedCellValue != null && selectedCellValue != cell
-                                          ? LayoutRegions(cell)
-                                          : Container(),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
+                            cellContent,
                           ],
                         ),
                       ),

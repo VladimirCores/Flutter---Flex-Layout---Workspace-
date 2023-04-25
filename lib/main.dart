@@ -45,21 +45,24 @@ class WorkspaceLayout extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'WorkspaceGrid',
-      home: LayoutInherited(
-        layout: layout,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return ValueListenableBuilder(
-              valueListenable: layout.cells,
-              builder: (_, List<LayoutCell> value, __) {
-                return layout.positionWidgetsFrom(
-                  layout.chain,
-                  parentWidth: constraints.maxWidth,
-                  parentHeight: constraints.maxHeight,
-                );
-              },
-            );
-          },
+      theme: ThemeData(scaffoldBackgroundColor: Colors.black12),
+      home: Scaffold(
+        body: LayoutInherited(
+          layout: layout,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return ValueListenableBuilder(
+                valueListenable: layout.cells,
+                builder: (_, List<LayoutCell> value, __) {
+                  return layout.positionWidgetsFrom(
+                    layout.chain,
+                    parentWidth: constraints.maxWidth,
+                    parentHeight: constraints.maxHeight,
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
