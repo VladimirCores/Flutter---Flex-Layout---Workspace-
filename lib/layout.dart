@@ -11,24 +11,23 @@ class Layout {
   int xCount = 0;
   int yCount = 0;
 
-  final List<LayoutCell> _items = [];
+  final ValueNotifier<List<LayoutCell>> _items = ValueNotifier([]);
 
   ValueNotifier<LayoutCell?> selectedCell = ValueNotifier(null);
 
-  LayoutCell get chain => _items.first;
-  List<LayoutCell> get cells => _items;
+  LayoutCell get chain => _items.value.first;
+  ValueNotifier<List<LayoutCell>> get cells => _items;
 
-  _breakPrevious(LayoutCell gc) {
-    if (gc.previous?.right == gc) gc.previous!.right = null;
-    if (gc.previous?.bottom == gc) gc.previous!.bottom = null;
+  _breakPrevious(LayoutCell cell) {
+    if (cell.previous?.right == cell) cell.previous!.right = null;
+    if (cell.previous?.bottom == cell) cell.previous!.bottom = null;
   }
 
-  LayoutCell add(LayoutCell gc) {
-    if (!_items.contains(gc)) {
-      gc.index = _items.length;
-      _items.add(gc);
+  LayoutCell add(LayoutCell cell) {
+    if (!_items.value.contains(cell)) {
+      _items.value.add(cell);
     }
-    return gc;
+    return cell;
   }
 
   LayoutCell addRight(LayoutCell to, LayoutCell gc) {
@@ -38,11 +37,34 @@ class Layout {
     return add(gc);
   }
 
-  LayoutCell addBottom(LayoutCell to, LayoutCell gc) {
-    _breakPrevious(gc);
-    to.bottom = gc;
-    gc.previous = to;
-    return add(gc);
+  LayoutCell addBottom(LayoutCell to, LayoutCell cell) {
+    _breakPrevious(cell);
+    to.bottom = cell;
+    cell.previous = to;
+    return add(cell);
+  }
+
+  void removeCell(LayoutCell cell) {
+    print('removeCell -> ${cell}');
+    final previous = cell.previous;
+    if (previous != null) {
+      if (previous.bottom == cell) {
+        if (cell.right != null) {
+          previous.bottom = cell.right;
+          cell.right!.previous = previous;
+        } else if (cell.bottom != null) {
+          previous.bottom = cell.bottom;
+          cell.bottom!.previous = previous;
+        } else {
+          previous.bottom = null;
+        }
+      } else if (previous.right == cell) {
+        previous.right = null;
+      }
+      previous.width = previous.height = -1;
+      cell.previous = null;
+    }
+    _items.value = _items.value.where((el) => el != cell).toList();
   }
 
   Widget positionWidgetsFrom(
@@ -88,33 +110,35 @@ class Layout {
                   final constrainedHeight = blockHeight > handlerSize ? blockHeight : handlerSize;
                   if (hasBottom) cell.height = constrainedHeight / parentHeight;
                   final color = cell.colorCode > 0 ? cell.colorCode : rndColorCode();
+                  final isRemovable = cell.hasConnections;
                   return Column(
                     children: [
                       Container(
                         width: constrainedWidth,
                         height: constrainedHeight,
-                        color: Color(color).withOpacity(1),
+                        color: Color(color).withAlpha(90),
                         child: Column(
                           children: [
                             CellHeader(
-                              cell: cell,
-                              title: 'Cell: ${cell.index}',
-                              onCellSelected: selectedCell,
+                              title: 'Cell',
+                              onPointerDown: () => selectedCell.value = cell,
+                              onPointerUp: () => selectedCell.value = null,
+                              onRemove: isRemovable ? () => removeCell(cell) : null,
                             ),
                             Expanded(
                               child: ValueListenableBuilder(
-                                  valueListenable: selectedCell,
-                                  builder: (_, LayoutCell? selectedCellValue, Widget? child) {
-                                    return Stack(
-                                      children: [
-                                        cell.widget ?? Container(),
-                                        LayoutRegions(cell)
-                                        // selectedCellValue != null && selectedCellValue != cell
-                                        //     ? LayoutRegions(cell)
-                                        //     : Container(),
-                                      ],
-                                    );
-                                  }),
+                                valueListenable: selectedCell,
+                                builder: (_, LayoutCell? selectedCellValue, Widget? child) {
+                                  return Stack(
+                                    children: [
+                                      cell.widget ?? Container(),
+                                      selectedCellValue != null && selectedCellValue != cell
+                                          ? LayoutRegions(cell)
+                                          : Container(),
+                                    ],
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ),

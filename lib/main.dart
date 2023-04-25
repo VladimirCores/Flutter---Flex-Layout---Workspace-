@@ -20,8 +20,9 @@ class WorkspaceLayout extends StatelessWidget {
 
     layout.add(generateCell());
 
-    layout.addRight(layout.chain, c1);
     layout.addBottom(layout.chain, c3);
+    layout.addRight(layout.chain, c1);
+    // layout.addRight(c3, generateCell());
     // layout.addBottom(c3, generateCell());
 
     // layout.addBottom(layout.addBottom(c1, generateCell()), generateCell());
@@ -48,10 +49,15 @@ class WorkspaceLayout extends StatelessWidget {
         layout: layout,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            return layout.positionWidgetsFrom(
-              layout.chain,
-              parentWidth: constraints.maxWidth,
-              parentHeight: constraints.maxHeight,
+            return ValueListenableBuilder(
+              valueListenable: layout.cells,
+              builder: (_, List<LayoutCell> value, __) {
+                return layout.positionWidgetsFrom(
+                  layout.chain,
+                  parentWidth: constraints.maxWidth,
+                  parentHeight: constraints.maxHeight,
+                );
+              },
             );
           },
         ),

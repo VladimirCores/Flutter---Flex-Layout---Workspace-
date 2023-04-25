@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:workspace_layout/cell/layout_cell.dart';
+import 'package:workspace_layout/consts/enums.dart';
 
-enum CellRegionSide { TOP, RIGHT, BOTTOM, LEFT, CENTER }
-
-const FULL_HEIGHT_SIDES = [CellRegionSide.RIGHT, CellRegionSide.LEFT, CellRegionSide.CENTER];
+const FULL_HEIGHT_SIDES = [
+  CellRegionSide.RIGHT,
+  CellRegionSide.LEFT,
+  CellRegionSide.CENTER,
+];
 
 class LayoutRegions extends StatefulWidget {
   const LayoutRegions(
@@ -45,11 +48,11 @@ class _LayoutRegionsState extends State<LayoutRegions> {
                 width: CellRegionSide.CENTER == side ? currentSize.width : _size!.width,
                 height: isFullCellHeight ? currentSize.height : _size!.height,
                 alignment: Alignment.center,
-                padding: const EdgeInsets.all(2),
-                color: Colors.black.withAlpha(80),
+                padding: const EdgeInsets.all(4),
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black.withAlpha(90), width: 2),
+                    border: Border.all(color: Colors.black.withAlpha(90), width: 1),
+                    color: Colors.black.withAlpha(80),
                   ),
                 ),
               ),
@@ -76,7 +79,7 @@ class CellRegions extends StatelessWidget {
           onInside: onInside,
         ),
         Expanded(
-          flex: 3,
+          flex: 2,
           child: Row(
             children: [
               LayoutCellRegion(
@@ -84,7 +87,7 @@ class CellRegions extends StatelessWidget {
                 onInside: onInside,
               ),
               LayoutCellRegion(
-                flex: 3,
+                flex: 2,
                 CellRegionSide.CENTER,
                 onInside: onInside,
               ),

@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:workspace_layout/cell/layout_cell.dart';
 
 class CellHeader extends StatefulWidget {
   const CellHeader({
     super.key,
     this.height = 32,
-    required this.cell,
     required this.title,
-    required this.onCellSelected,
+    required this.onPointerDown,
+    required this.onPointerUp,
+    required this.onRemove,
   });
 
   final double height;
   final String title;
-  final LayoutCell cell;
-  final ValueNotifier<LayoutCell?> onCellSelected;
+  final Function() onPointerDown;
+  final Function() onPointerUp;
+  final Function()? onRemove;
 
   @override
   State<CellHeader> createState() => _CellHeaderState();
@@ -25,6 +26,7 @@ class _CellHeaderState extends State<CellHeader> {
   @override
   Widget build(BuildContext context) {
     var color = Colors.transparent;
+    final canInteract = widget.onRemove != null;
     return Material(
       child: Theme(
         data: Theme.of(context).copyWith(
@@ -35,7 +37,7 @@ class _CellHeaderState extends State<CellHeader> {
         ),
         child: Container(
           width: double.maxFinite,
-          color: Colors.black26,
+          color: Colors.transparent,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -43,38 +45,35 @@ class _CellHeaderState extends State<CellHeader> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Listener(
-                  onPointerDown: (_) {
-                    print('onDown');
-                    widget.onCellSelected.value = widget.cell;
-                  },
-                  onPointerUp: (_) {
-                    print('onUp');
-                    widget.onCellSelected.value = null;
-                  },
-                  child: Row(children: [
-                    Text(widget.title),
-                    const SizedBox(width: 4),
-                    StatefulBuilder(
-                      builder: (_, setState) {
-                        return InkWell(
-                          onHover: (_) {
-                            setState(() {
-                              isCloseButtonHover = !isCloseButtonHover;
-                            });
-                          },
-                          onTap: () {},
-                          child: Icon(
-                            Icons.close,
-                            weight: 700,
-                            size: 16.0,
-                            color: isCloseButtonHover ? Colors.black87 : Colors.black26,
-                          ),
-                        );
-                      },
-                    ),
-                  ]),
-                ),
+                if (!canInteract)
+                  Text(widget.title)
+                else
+                  Listener(
+                    onPointerDown: (_) => widget.onPointerDown(),
+                    onPointerUp: (_) => widget.onPointerUp(),
+                    child: Row(children: [
+                      Text(widget.title),
+                      const SizedBox(width: 4),
+                      StatefulBuilder(
+                        builder: (_, setState) {
+                          return InkWell(
+                            onHover: (_) {
+                              setState(() {
+                                isCloseButtonHover = !isCloseButtonHover;
+                              });
+                            },
+                            onTap: widget.onRemove,
+                            child: Icon(
+                              Icons.close,
+                              weight: 700,
+                              size: 16.0,
+                              color: isCloseButtonHover ? Colors.black87 : Colors.black26,
+                            ),
+                          );
+                        },
+                      ),
+                    ]),
+                  ),
               ],
             ),
           ),
