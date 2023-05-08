@@ -74,11 +74,12 @@ class Layout {
   }) {
     final hasRight = cell.right != null;
     final hasBottom = cell.bottom != null;
+
     final hasWidth = cell.width > 0;
     final hasHeight = cell.height > 0;
 
-    final handleDeltaX = (hasRight ? handlerSize : 0);
-    final handleDeltaY = (hasBottom ? handlerSize : 0);
+    final handleSizeX = (hasRight ? handlerSize : 0);
+    final handleSizeY = (hasBottom ? handlerSize : 0);
 
     print(
       '(${hasHeight ? 'hasHeight(${cell.height})' : 'noHeight'}:${hasWidth ? 'hasWidth' : 'noWidth'}) '
@@ -88,26 +89,119 @@ class Layout {
     cell.parentWidth = parentWidth;
     cell.parentHeight = parentHeight;
 
-    ValueNotifier<double> horizontalResizer = ValueNotifier(
-        hasWidth ? cell.width * parentWidth : parentWidth / (hasRight ? 2 : 1) - handleDeltaX);
-    ValueNotifier<double> verticalResizer = ValueNotifier(
-        hasHeight ? cell.height * parentHeight : parentHeight / (hasBottom ? 2 : 1) - handleDeltaY);
+    final initialWidth =
+        hasWidth ? cell.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
+    final initialHeight =
+        hasHeight ? cell.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
 
-    final cellContent = Expanded(
-      child: ValueListenableBuilder(
-        valueListenable: selectedCell,
-        builder: (_, LayoutCell? selected, Widget? child) {
-          return Stack(
-            children: [
-              cell.widget ?? Container(),
-              if (selected != null && selected != cell) LayoutRegions(cell)
-            ],
-          );
-        },
-      ),
+    ValueNotifier<double> horizontalResizer = ValueNotifier(initialWidth);
+    ValueNotifier<double> verticalResizer = ValueNotifier(initialHeight);
+
+    final cellContent = Column(
+      children: [
+        CellHeader(
+          title: 'Cell',
+          onPointerDown: () => selectedCell.value = cell,
+          onPointerUp: () => selectedCell.value = null,
+          onRemove: cell.hasConnections ? () => removeCell(cell) : null,
+        ),
+        Expanded(
+          child: ValueListenableBuilder(
+            valueListenable: selectedCell,
+            builder: (_, LayoutCell? selected, Widget? child) {
+              final hasSelected = selected != null && selected != cell;
+              return Stack(
+                children: [
+                  cell.widget ?? Container(),
+                  if (hasSelected) LayoutRegions(cell),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
 
-    Widget items = SizedBox(
+    List<Widget> createNextSideWithHandler(
+      cell,
+      resizer,
+      width,
+      height,
+      handlerWidth,
+      handlerSize,
+      isHorizontal,
+    ) {
+      return [
+        Handler(
+          handlerWidth,
+          resizer: resizer,
+          isHorizontal: isHorizontal,
+          size: handlerSize,
+        ),
+        positionWidgetsFrom(
+          cell,
+          parentWidth: width,
+          parentHeight: height,
+        ),
+      ];
+    }
+
+    if (cell.isBottomFirst) {
+      return SizedBox(
+        width: parentWidth,
+        height: parentHeight,
+        child: ValueListenableBuilder(
+          valueListenable: verticalResizer,
+          builder: (_, double blockHeight, Widget? child) {
+            final constrainedHeight = blockHeight > handlerSize ? blockHeight : handlerSize;
+            if (hasBottom) cell.height = constrainedHeight / parentHeight;
+            return Column(
+              children: [
+                ValueListenableBuilder(
+                  valueListenable: horizontalResizer,
+                  builder: (_, double blockWidth, Widget? child) {
+                    final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
+                    if (hasRight) cell.width = constrainedWidth / parentWidth;
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: constrainedWidth,
+                          height: constrainedHeight,
+                          child: cellContent,
+                        ),
+                        if (hasRight)
+                          ...createNextSideWithHandler(
+                            cell.right!,
+                            horizontalResizer,
+                            parentWidth - (constrainedWidth + handleSizeX),
+                            constrainedHeight,
+                            constrainedHeight,
+                            handleSizeX,
+                            false,
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                if (hasBottom)
+                  ...createNextSideWithHandler(
+                    cell.bottom!,
+                    verticalResizer,
+                    parentWidth,
+                    parentHeight - (constrainedHeight + handleSizeY),
+                    parentWidth,
+                    handleSizeY,
+                    true,
+                  )
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    return SizedBox(
       width: parentWidth,
       height: parentHeight,
       child: ValueListenableBuilder(
@@ -115,67 +209,50 @@ class Layout {
         builder: (_, double blockWidth, Widget? child) {
           final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
           if (hasRight) cell.width = constrainedWidth / parentWidth;
-
           return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ValueListenableBuilder(
                 valueListenable: verticalResizer,
                 builder: (_, double blockHeight, Widget? child) {
                   final constrainedHeight = blockHeight > handlerSize ? blockHeight : handlerSize;
                   if (hasBottom) cell.height = constrainedHeight / parentHeight;
-                  final isRemovable = cell.hasConnections;
                   return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
                         width: constrainedWidth,
                         height: constrainedHeight,
-                        child: Column(
-                          children: [
-                            CellHeader(
-                              title: 'Cell',
-                              onPointerDown: () => selectedCell.value = cell,
-                              onPointerUp: () => selectedCell.value = null,
-                              onRemove: isRemovable ? () => removeCell(cell) : null,
-                            ),
-                            cellContent,
-                          ],
-                        ),
+                        child: cellContent,
                       ),
-                      if (hasBottom) ...[
-                        Handler(
-                          constrainedWidth,
-                          resizer: verticalResizer,
-                          isHorizontal: true,
-                          size: handlerSize,
-                        ),
-                        positionWidgetsFrom(
+                      if (hasBottom)
+                        ...createNextSideWithHandler(
                           cell.bottom!,
-                          parentWidth: constrainedWidth,
-                          parentHeight: parentHeight - (constrainedHeight + handleDeltaY),
-                        ),
-                      ]
+                          verticalResizer,
+                          constrainedWidth,
+                          parentHeight - (constrainedHeight + handleSizeY),
+                          constrainedWidth,
+                          handleSizeY,
+                          true,
+                        )
                     ],
                   );
                 },
               ),
-              if (hasRight) ...[
-                Handler(
-                  parentHeight,
-                  resizer: horizontalResizer,
-                  isHorizontal: false,
-                  size: handlerSize,
-                ),
-                positionWidgetsFrom(
+              if (hasRight)
+                ...createNextSideWithHandler(
                   cell.right!,
-                  parentWidth: parentWidth - (constrainedWidth + handleDeltaX),
-                  parentHeight: parentHeight,
-                ),
-              ],
+                  horizontalResizer,
+                  parentWidth - (constrainedWidth + handleSizeX),
+                  parentHeight,
+                  parentHeight,
+                  handleSizeX,
+                  false,
+                )
             ],
           );
         },
       ),
     );
-    return items;
   }
 }

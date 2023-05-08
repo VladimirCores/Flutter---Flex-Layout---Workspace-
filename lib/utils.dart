@@ -1,3 +1,3 @@
 import 'dart:math';
 
-final rndColorCode = () => (Random().nextDouble() * 0xFFFFFF).toInt();
+final int Function() rndColorCode = () => (Random().nextDouble() * 0xFFFFFF).toInt();

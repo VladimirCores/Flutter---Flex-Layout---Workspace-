@@ -26,7 +26,7 @@ class LayoutCell {
     if (value != null) order.add(value);
   }
 
-  bool get isBottomFirst => bottom == order.first;
+  bool get isBottomFirst => bottom != null && bottom == order.first;
   bool get hasConnections => order.isNotEmpty || previous != null;
 
   LayoutCell? _right;
