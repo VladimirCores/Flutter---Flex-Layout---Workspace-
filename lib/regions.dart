@@ -10,11 +10,15 @@ const FULL_HEIGHT_SIDES = [
 
 class LayoutRegions extends StatefulWidget {
   const LayoutRegions(
-    this.cell, {
+    this.cell,
+    this.selectedCell,
+    this.selectedCellRegionSide, {
     super.key,
   });
 
   final LayoutCell cell;
+  final LayoutCell selectedCell;
+  final ValueNotifier<({LayoutCell? cell, CellRegionSide? side})?> selectedCellRegionSide;
 
   @override
   State<LayoutRegions> createState() => _LayoutRegionsState();
@@ -22,11 +26,29 @@ class LayoutRegions extends StatefulWidget {
 
 class _LayoutRegionsState extends State<LayoutRegions> {
   final ValueNotifier<CellRegionSide?> _side = ValueNotifier(null);
+  CellRegionSide? _cellSide;
   Size? _size;
 
   void onInside(Size size, CellRegionSide? side) {
+    print('> LayoutRegions -> onInside: ${side} | ${size}');
     _size = size;
     _side.value = side;
+    widget.selectedCellRegionSide.value = (cell: widget.cell, side: side);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final cellSideIndex = widget.cell.findCellSideIndex(widget.selectedCell);
+    if (cellSideIndex > -1) {
+      _cellSide = CellRegionSide.values[cellSideIndex];
+      print('> LayoutRegions -> initState - Cell position: ${cellSideIndex} | $_cellSide');
+    }
   }
 
   @override
@@ -36,7 +58,8 @@ class _LayoutRegionsState extends State<LayoutRegions> {
         ValueListenableBuilder(
           valueListenable: _side,
           builder: (_, side, __) {
-            if (side == null || _size == null) return Container();
+            final skipHighlight = side == null || _size == null || _cellSide == side;
+            if (skipHighlight) return Container();
             final currentSize = (context.findRenderObject() as RenderBox).size;
             double? top = CellRegionSide.BOTTOM != side ? 0 : currentSize.height - _size!.height;
             double? left = CellRegionSide.RIGHT != side ? 0 : currentSize.width - _size!.width;
@@ -51,8 +74,8 @@ class _LayoutRegionsState extends State<LayoutRegions> {
                 padding: const EdgeInsets.all(4),
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black.withAlpha(90), width: 1),
-                    color: Colors.black.withAlpha(80),
+                    border: Border.all(color: Colors.black.withAlpha(70), width: 1),
+                    color: Colors.black.withAlpha(60),
                   ),
                 ),
               ),

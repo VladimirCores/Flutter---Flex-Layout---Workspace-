@@ -21,6 +21,14 @@ class LayoutCell {
   Widget? widget;
   final order = <LayoutCell>[];
 
+  int findCellSideIndex(LayoutCell cell) {
+    if (cell.bottom == this) return 0; // top
+    if (cell == _right) return 1; // right
+    if (cell == _bottom) return 2; // bottom
+    if (cell.right == this) return 3; // left
+    return -1;
+  }
+
   void _appendOnTop(LayoutCell? value, LayoutCell? current) {
     if (current != null) order.remove(current);
     if (value != null) order.add(value);

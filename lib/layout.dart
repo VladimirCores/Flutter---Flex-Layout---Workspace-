@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:workspace_layout/cell/cell_header.dart';
 import 'package:workspace_layout/cell/layout_cell.dart';
+import 'package:workspace_layout/consts/enums.dart';
 import 'package:workspace_layout/handler.dart';
 import 'package:workspace_layout/regions.dart';
 
@@ -12,7 +13,8 @@ class Layout {
 
   final ValueNotifier<List<LayoutCell>> _items = ValueNotifier([]);
 
-  ValueNotifier<LayoutCell?> selectedCell = ValueNotifier(null);
+  final ValueNotifier<LayoutCell?> selectedCell = ValueNotifier(null);
+  final ValueNotifier<({LayoutCell? cell, CellRegionSide? side})?> selectedCellRegionSide = ValueNotifier(null);
 
   LayoutCell get chain => _items.value.first;
   ValueNotifier<List<LayoutCell>> get cells => _items;
@@ -44,7 +46,7 @@ class Layout {
   }
 
   void removeCell(LayoutCell cell) {
-    print('removeCell -> ${cell}');
+    print('> Layout -> removeCell -> ${cell}');
     final previous = cell.previous;
     if (previous != null) {
       if (previous.bottom == cell) {
@@ -81,18 +83,16 @@ class Layout {
     final handleSizeX = (hasRight ? handlerSize : 0);
     final handleSizeY = (hasBottom ? handlerSize : 0);
 
-    print(
-      '(${hasHeight ? 'hasHeight(${cell.height})' : 'noHeight'}:${hasWidth ? 'hasWidth' : 'noWidth'}) '
-      '(${hasBottom ? 'hasBottom' : 'noBottom'}:${hasRight ? 'hasRight' : 'noRight'}) ',
-    );
+    // print(
+    //   '(${hasHeight ? 'hasHeight(${cell.height})' : 'noHeight'}:${hasWidth ? 'hasWidth' : 'noWidth'}) '
+    //   '(${hasBottom ? 'hasBottom' : 'noBottom'}:${hasRight ? 'hasRight' : 'noRight'}) ',
+    // );
 
     cell.parentWidth = parentWidth;
     cell.parentHeight = parentHeight;
 
-    final initialWidth =
-        hasWidth ? cell.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
-    final initialHeight =
-        hasHeight ? cell.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
+    final initialWidth = hasWidth ? cell.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
+    final initialHeight = hasHeight ? cell.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
 
     ValueNotifier<double> horizontalResizer = ValueNotifier(initialWidth);
     ValueNotifier<double> verticalResizer = ValueNotifier(initialHeight);
@@ -102,7 +102,19 @@ class Layout {
         CellHeader(
           title: 'Cell',
           onPointerDown: () => selectedCell.value = cell,
-          onPointerUp: () => selectedCell.value = null,
+          onPointerUp: () {
+            print('> Layout -> CellHeader - onPointerUp: ${selectedCell.value} | ${selectedCellRegionSide.value}');
+            final canRearrange = selectedCellRegionSide.value?.side != null;
+            if (canRearrange) {
+              final cellSideIndex = selectedCellRegionSide.value!.cell!.findCellSideIndex(selectedCell.value!);
+              if (cellSideIndex > -1) {
+                final cellSide = CellRegionSide.values[cellSideIndex];
+                print('> \t cell position: ${cellSideIndex} | $cellSide');
+              }
+            }
+            selectedCell.value = null;
+            selectedCellRegionSide.value = null;
+          },
           onRemove: cell.hasConnections ? () => removeCell(cell) : null,
         ),
         Expanded(
@@ -110,10 +122,16 @@ class Layout {
             valueListenable: selectedCell,
             builder: (_, LayoutCell? selected, Widget? child) {
               final hasSelected = selected != null && selected != cell;
+              // print('> cellContent -> hasSelected: ${hasSelected}');
               return Stack(
                 children: [
                   cell.widget ?? Container(),
-                  if (hasSelected) LayoutRegions(cell),
+                  if (hasSelected)
+                    LayoutRegions(
+                      cell,
+                      selectedCell.value!,
+                      selectedCellRegionSide,
+                    ),
                 ],
               );
             },

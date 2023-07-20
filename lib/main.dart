@@ -22,7 +22,7 @@ class WorkspaceLayout extends StatelessWidget {
 
     layout.addBottom(layout.chain, c3);
     layout.addRight(layout.chain, c1);
-    // layout.addRight(c3, generateCell());
+    layout.addRight(c3, generateCell());
     // layout.addBottom(c3, generateCell());
 
     // layout.addBottom(layout.addBottom(c1, generateCell()), generateCell());

@@ -22,6 +22,7 @@ class CellHeader extends StatefulWidget {
 
 class _CellHeaderState extends State<CellHeader> {
   bool isCloseButtonHover = false;
+  bool isSelected = false;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,7 @@ class _CellHeaderState extends State<CellHeader> {
         ),
         child: Container(
           width: double.maxFinite,
-          color: Colors.transparent,
+          color: isSelected ? Colors.lightGreen : Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -49,8 +50,14 @@ class _CellHeaderState extends State<CellHeader> {
                   Text(widget.title)
                 else
                   Listener(
-                    onPointerDown: (_) => widget.onPointerDown(),
-                    onPointerUp: (_) => widget.onPointerUp(),
+                    onPointerDown: (_) => setState(() {
+                      isSelected = true;
+                      widget.onPointerDown();
+                    }),
+                    onPointerUp: (_) => setState(() {
+                      isSelected = false;
+                      widget.onPointerUp();
+                    }),
                     child: Row(children: [
                       Text(widget.title),
                       const SizedBox(width: 4),
