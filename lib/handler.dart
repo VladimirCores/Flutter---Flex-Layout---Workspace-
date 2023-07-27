@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:workspace_layout/layout.dart';
 
 class Handler extends StatefulWidget {
   const Handler(
-    this.parentSize, {
+    this.params, {
     super.key,
-    this.isHorizontal = false,
-    required this.resizer,
-    required this.size,
   });
 
-  final bool isHorizontal;
-  final ValueNotifier<double> resizer;
-  final double parentSize;
-  final double size;
+  final LayoutHandleParams params;
 
   @override
   State<Handler> createState() => _HandlerState();
@@ -25,15 +20,14 @@ class _HandlerState extends State<Handler> {
       behavior: HitTestBehavior.deferToChild,
       onPointerMove: (_) {
         // print('DragHandle > onPointerMove: ${_.position} - ${_.delta}');
-        final delta = widget.isHorizontal ? _.delta.dy : _.delta.dx;
-        widget.resizer.value += delta;
+        final delta = widget.params.isHorizontal ? _.delta.dy : _.delta.dx;
+        widget.params.resizer.value += delta;
       },
       child: MouseRegion(
-        cursor:
-            widget.isHorizontal ? SystemMouseCursors.resizeRow : SystemMouseCursors.resizeColumn,
+        cursor: widget.params.isHorizontal ? SystemMouseCursors.resizeRow : SystemMouseCursors.resizeColumn,
         child: Container(
-          height: widget.isHorizontal ? widget.size : widget.parentSize,
-          width: widget.isHorizontal ? widget.parentSize : widget.size,
+          height: widget.params.isHorizontal ? widget.params.size : widget.params.parentSize,
+          width: widget.params.isHorizontal ? widget.params.parentSize : widget.params.size,
           color: Colors.black,
         ),
       ),

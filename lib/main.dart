@@ -10,22 +10,22 @@ void main() {
 class WorkspaceLayout extends StatelessWidget {
   WorkspaceLayout({super.key}) {
     // generateCell() => LayoutCell(colorCode: rndColorCode());
-    generateCell() => LayoutCell();
-    final c1 = generateCell();
-    final c2 = generateCell();
-    final c3 = generateCell();
+    generateCell([String title = '']) => LayoutCell(widget: Text(title));
+    final c1 = generateCell("1");
+    final c2 = generateCell('2');
+    final c3 = generateCell("3");
     final c4 = generateCell();
     final c5 = generateCell();
     final c6 = generateCell();
 
-    layout.add(generateCell());
+    layout.add(generateCell('0'));
 
-    layout.addBottom(layout.chain, c3);
     layout.addRight(layout.chain, c1);
-    layout.addRight(c3, generateCell());
-    // layout.addBottom(c3, generateCell());
+    layout.addBottom(layout.chain, c2);
+    layout.addRight(c2, generateCell('2-right'));
+    layout.addBottom(c2, generateCell('2-bottom'));
 
-    // layout.addBottom(layout.addBottom(c1, generateCell()), generateCell());
+    layout.addBottom(layout.addBottom(c1, generateCell('1-bottom')), generateCell('1-bottom-bottom'));
     //
     // layout.addRight(c3, c4);
     // layout.addRight(c4, generateCell());

@@ -5,6 +5,30 @@ import 'package:workspace_layout/consts/enums.dart';
 import 'package:workspace_layout/handler.dart';
 import 'package:workspace_layout/regions.dart';
 
+class LayoutHandleParams {
+  final ValueNotifier<double> resizer;
+  final double parentSize;
+  final double size;
+  final bool isHorizontal;
+
+  LayoutHandleParams(this.resizer, this.parentSize, this.size, this.isHorizontal);
+}
+
+class LayoutCellParams {
+  final LayoutCell cell;
+  final double parentWidth;
+  final double parentHeight;
+
+  final LayoutHandleParams handleParams;
+
+  LayoutCellParams(
+    this.cell,
+    this.parentWidth,
+    this.parentHeight,
+    this.handleParams,
+  );
+}
+
 class Layout {
   Layout();
 
@@ -66,6 +90,17 @@ class Layout {
       cell.previous = null;
     }
     _items.value = _items.value.where((el) => el != cell).toList();
+  }
+
+  List<Widget> createNextSideWithHandler(LayoutCellParams params) {
+    return [
+      Handler(params.handleParams),
+      positionWidgetsFrom(
+        params.cell,
+        parentWidth: params.parentWidth,
+        parentHeight: params.parentHeight,
+      ),
+    ];
   }
 
   Widget positionWidgetsFrom(
@@ -140,135 +175,105 @@ class Layout {
       ],
     );
 
-    List<Widget> createNextSideWithHandler(
+    return _buildCell(
       cell,
-      resizer,
-      width,
-      height,
-      handlerWidth,
+      parentWidth,
+      parentHeight,
+      verticalResizer,
+      horizontalResizer,
+      hasBottom,
+      hasRight,
       handlerSize,
-      isHorizontal,
-    ) {
-      return [
-        Handler(
-          handlerWidth,
-          resizer: resizer,
-          isHorizontal: isHorizontal,
-          size: handlerSize,
-        ),
-        positionWidgetsFrom(
-          cell,
-          parentWidth: width,
-          parentHeight: height,
-        ),
-      ];
-    }
+      cellContent,
+      handleSizeX,
+      handleSizeY,
+    );
+  }
 
-    if (cell.isBottomFirst) {
-      return SizedBox(
-        width: parentWidth,
-        height: parentHeight,
-        child: ValueListenableBuilder(
-          valueListenable: verticalResizer,
-          builder: (_, double blockHeight, Widget? child) {
-            final constrainedHeight = blockHeight > handlerSize ? blockHeight : handlerSize;
-            if (hasBottom) cell.height = constrainedHeight / parentHeight;
-            return Column(
-              children: [
-                ValueListenableBuilder(
-                  valueListenable: horizontalResizer,
-                  builder: (_, double blockWidth, Widget? child) {
-                    final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
-                    if (hasRight) cell.width = constrainedWidth / parentWidth;
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: constrainedWidth,
-                          height: constrainedHeight,
-                          child: cellContent,
-                        ),
-                        if (hasRight)
-                          ...createNextSideWithHandler(
-                            cell.right!,
-                            horizontalResizer,
-                            parentWidth - (constrainedWidth + handleSizeX),
-                            constrainedHeight,
-                            constrainedHeight,
-                            handleSizeX,
-                            false,
-                          ),
-                      ],
-                    );
-                  },
-                ),
-                if (hasBottom)
-                  ...createNextSideWithHandler(
-                    cell.bottom!,
-                    verticalResizer,
-                    parentWidth,
-                    parentHeight - (constrainedHeight + handleSizeY),
-                    parentWidth,
-                    handleSizeY,
-                    true,
-                  )
-              ],
-            );
-          },
-        ),
+  Widget _buildCell(
+    cell,
+    parentWidth,
+    parentHeight,
+    verticalResizer,
+    horizontalResizer,
+    hasBottom,
+    hasRight,
+    handlerSize,
+    cellContent,
+    handleSizeX,
+    handleSizeY,
+  ) {
+    Widget buildInnerResizable(isBottomFirst, resizer, outerSize) {
+      return ValueListenableBuilder(
+        valueListenable: resizer,
+        builder: (_, double innerSize, Widget? child) {
+          final constrainedInnerSize = innerSize > handlerSize ? innerSize : handlerSize;
+          if (isBottomFirst && hasRight) cell.parentWidth = constrainedInnerSize / parentWidth;
+          if (!isBottomFirst && hasBottom) cell.parentHeight = constrainedInnerSize / parentHeight;
+          final hasContinue = isBottomFirst ? hasRight : hasBottom;
+          return Flex(
+            direction: isBottomFirst ? Axis.horizontal : Axis.vertical,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: isBottomFirst ? constrainedInnerSize : outerSize,
+                height: isBottomFirst ? outerSize : constrainedInnerSize,
+                child: cellContent,
+              ),
+              if (hasContinue)
+                ...createNextSideWithHandler(isBottomFirst
+                    ? LayoutCellParams(
+                        cell.right!,
+                        parentWidth - (constrainedInnerSize + handleSizeX),
+                        outerSize,
+                        LayoutHandleParams(horizontalResizer, outerSize, handleSizeX, false),
+                      )
+                    : LayoutCellParams(
+                        cell.bottom!,
+                        outerSize,
+                        parentHeight - (constrainedInnerSize + handleSizeY),
+                        LayoutHandleParams(verticalResizer, outerSize, handleSizeY, true),
+                      )),
+            ],
+          );
+        },
       );
     }
+
+    final isBottomFirst = cell.isBottomFirst;
 
     return SizedBox(
       width: parentWidth,
       height: parentHeight,
       child: ValueListenableBuilder(
-        valueListenable: horizontalResizer,
-        builder: (_, double blockWidth, Widget? child) {
-          final constrainedWidth = blockWidth > handlerSize ? blockWidth : handlerSize;
-          if (hasRight) cell.width = constrainedWidth / parentWidth;
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ValueListenableBuilder(
-                valueListenable: verticalResizer,
-                builder: (_, double blockHeight, Widget? child) {
-                  final constrainedHeight = blockHeight > handlerSize ? blockHeight : handlerSize;
-                  if (hasBottom) cell.height = constrainedHeight / parentHeight;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: constrainedWidth,
-                        height: constrainedHeight,
-                        child: cellContent,
-                      ),
-                      if (hasBottom)
-                        ...createNextSideWithHandler(
-                          cell.bottom!,
-                          verticalResizer,
-                          constrainedWidth,
-                          parentHeight - (constrainedHeight + handleSizeY),
-                          constrainedWidth,
-                          handleSizeY,
-                          true,
-                        )
-                    ],
-                  );
-                },
-              ),
-              if (hasRight)
-                ...createNextSideWithHandler(
-                  cell.right!,
-                  horizontalResizer,
-                  parentWidth - (constrainedWidth + handleSizeX),
-                  parentHeight,
-                  parentHeight,
-                  handleSizeX,
-                  false,
-                )
-            ],
-          );
+        valueListenable: isBottomFirst ? verticalResizer : horizontalResizer,
+        builder: (_, double blockHeightWidth, Widget? child) {
+          final outerSize = blockHeightWidth > handlerSize ? blockHeightWidth : handlerSize;
+
+          if (isBottomFirst && hasBottom) cell.parentHeight = outerSize / parentHeight;
+          if (!isBottomFirst && hasRight) cell.parentWidth = outerSize / parentWidth;
+
+          return Flex(direction: isBottomFirst ? Axis.vertical : Axis.horizontal, children: [
+            buildInnerResizable(
+              isBottomFirst,
+              isBottomFirst ? horizontalResizer : verticalResizer,
+              outerSize,
+            ),
+            if (hasBottom || hasRight)
+              ...createNextSideWithHandler(isBottomFirst
+                  ? LayoutCellParams(
+                      cell.bottom!,
+                      parentWidth,
+                      parentHeight - (outerSize + handleSizeY),
+                      LayoutHandleParams(verticalResizer, parentWidth, handleSizeY, true),
+                    )
+                  : LayoutCellParams(
+                      cell.right!,
+                      parentWidth - (outerSize + handleSizeX),
+                      parentHeight,
+                      LayoutHandleParams(horizontalResizer, parentHeight, handleSizeX, false),
+                    ))
+          ]);
         },
       ),
     );
