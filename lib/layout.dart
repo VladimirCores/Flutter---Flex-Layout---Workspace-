@@ -115,8 +115,8 @@ class Layout {
     final hasWidth = cell.width > 0;
     final hasHeight = cell.height > 0;
 
-    final handleSizeX = (hasRight ? handlerSize : 0);
-    final handleSizeY = (hasBottom ? handlerSize : 0);
+    final double handleSizeX = (hasRight ? handlerSize : 0);
+    final double handleSizeY = (hasBottom ? handlerSize : 0);
 
     // print(
     //   '(${hasHeight ? 'hasHeight(${cell.height})' : 'noHeight'}:${hasWidth ? 'hasWidth' : 'noWidth'}) '
@@ -175,71 +175,6 @@ class Layout {
       ],
     );
 
-    return _buildCell(
-      cell,
-      parentWidth,
-      parentHeight,
-      verticalResizer,
-      horizontalResizer,
-      hasBottom,
-      hasRight,
-      handlerSize,
-      cellContent,
-      handleSizeX,
-      handleSizeY,
-    );
-  }
-
-  Widget _buildCell(
-    cell,
-    parentWidth,
-    parentHeight,
-    verticalResizer,
-    horizontalResizer,
-    hasBottom,
-    hasRight,
-    handlerSize,
-    cellContent,
-    handleSizeX,
-    handleSizeY,
-  ) {
-    Widget buildInnerResizable(isBottomFirst, resizer, outerSize) {
-      return ValueListenableBuilder(
-        valueListenable: resizer,
-        builder: (_, double innerSize, Widget? child) {
-          final constrainedInnerSize = innerSize > handlerSize ? innerSize : handlerSize;
-          if (isBottomFirst && hasRight) cell.parentWidth = constrainedInnerSize / parentWidth;
-          if (!isBottomFirst && hasBottom) cell.parentHeight = constrainedInnerSize / parentHeight;
-          final hasContinue = isBottomFirst ? hasRight : hasBottom;
-          return Flex(
-            direction: isBottomFirst ? Axis.horizontal : Axis.vertical,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: isBottomFirst ? constrainedInnerSize : outerSize,
-                height: isBottomFirst ? outerSize : constrainedInnerSize,
-                child: cellContent,
-              ),
-              if (hasContinue)
-                ...createNextSideWithHandler(isBottomFirst
-                    ? LayoutCellParams(
-                        cell.right!,
-                        parentWidth - (constrainedInnerSize + handleSizeX),
-                        outerSize,
-                        LayoutHandleParams(horizontalResizer, outerSize, handleSizeX, false),
-                      )
-                    : LayoutCellParams(
-                        cell.bottom!,
-                        outerSize,
-                        parentHeight - (constrainedInnerSize + handleSizeY),
-                        LayoutHandleParams(verticalResizer, outerSize, handleSizeY, true),
-                      )),
-            ],
-          );
-        },
-      );
-    }
-
     final isBottomFirst = cell.isBottomFirst;
 
     return SizedBox(
@@ -253,27 +188,60 @@ class Layout {
           if (isBottomFirst && hasBottom) cell.parentHeight = outerSize / parentHeight;
           if (!isBottomFirst && hasRight) cell.parentWidth = outerSize / parentWidth;
 
-          return Flex(direction: isBottomFirst ? Axis.vertical : Axis.horizontal, children: [
-            buildInnerResizable(
-              isBottomFirst,
-              isBottomFirst ? horizontalResizer : verticalResizer,
-              outerSize,
-            ),
-            if (hasBottom || hasRight)
-              ...createNextSideWithHandler(isBottomFirst
-                  ? LayoutCellParams(
-                      cell.bottom!,
-                      parentWidth,
-                      parentHeight - (outerSize + handleSizeY),
-                      LayoutHandleParams(verticalResizer, parentWidth, handleSizeY, true),
-                    )
-                  : LayoutCellParams(
-                      cell.right!,
-                      parentWidth - (outerSize + handleSizeX),
-                      parentHeight,
-                      LayoutHandleParams(horizontalResizer, parentHeight, handleSizeX, false),
-                    ))
-          ]);
+          return Flex(
+            direction: isBottomFirst ? Axis.vertical : Axis.horizontal,
+            children: [
+              ValueListenableBuilder(
+                valueListenable: isBottomFirst ? horizontalResizer : verticalResizer,
+                builder: (_, double blockWidthHeight, Widget? child) {
+                  final innerSize = blockWidthHeight > handlerSize ? blockWidthHeight : handlerSize;
+
+                  if (isBottomFirst && hasRight) cell.parentWidth = innerSize / parentWidth;
+                  if (!isBottomFirst && hasBottom) cell.parentHeight = innerSize / parentHeight;
+
+                  return Flex(
+                    direction: isBottomFirst ? Axis.horizontal : Axis.vertical,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: isBottomFirst ? innerSize : outerSize,
+                        height: isBottomFirst ? outerSize : innerSize,
+                        child: cellContent,
+                      ),
+                      if (isBottomFirst ? hasRight : hasBottom)
+                        ...createNextSideWithHandler(isBottomFirst
+                            ? LayoutCellParams(
+                                cell.right!,
+                                parentWidth - (innerSize + handleSizeX),
+                                outerSize,
+                                LayoutHandleParams(horizontalResizer, outerSize, handleSizeX, false),
+                              )
+                            : LayoutCellParams(
+                                cell.bottom!,
+                                outerSize,
+                                parentHeight - (innerSize + handleSizeY),
+                                LayoutHandleParams(verticalResizer, outerSize, handleSizeY, true),
+                              )),
+                    ],
+                  );
+                },
+              ),
+              if (hasBottom || hasRight)
+                ...createNextSideWithHandler(isBottomFirst
+                    ? LayoutCellParams(
+                        cell.bottom!,
+                        parentWidth,
+                        parentHeight - (outerSize + handleSizeY),
+                        LayoutHandleParams(verticalResizer, parentWidth, handleSizeY, true),
+                      )
+                    : LayoutCellParams(
+                        cell.right!,
+                        parentWidth - (outerSize + handleSizeX),
+                        parentHeight,
+                        LayoutHandleParams(horizontalResizer, parentHeight, handleSizeX, false),
+                      ))
+            ],
+          );
         },
       ),
     );
