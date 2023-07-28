@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:workspace_layout/cell/cell_header.dart';
 import 'package:workspace_layout/cell/layout_cell.dart';
@@ -69,27 +71,123 @@ class Layout {
     return add(cell);
   }
 
-  void removeCell(LayoutCell cell) {
-    print('> Layout -> removeCell -> ${cell}');
-    final previous = cell.previous;
-    if (previous != null) {
-      if (previous.bottom == cell) {
-        if (cell.right != null) {
-          previous.bottom = cell.right;
-          cell.right!.previous = previous;
-        } else if (cell.bottom != null) {
-          previous.bottom = cell.bottom;
-          cell.bottom!.previous = previous;
-        } else {
-          previous.bottom = null;
-        }
-      } else if (previous.right == cell) {
-        previous.right = null;
-      }
-      previous.width = previous.height = -1;
-      cell.previous = null;
+  _connectRightToBottomMostRight(LayoutCell cell, LayoutCell cellBottom, double handleSize) {
+    LayoutCell? right = cellBottom;
+    double parentWidth = cell.parentWidth;
+    print('parent width = ${parentWidth}');
+    while (right != null) {
+      final rightWidthRelative = right.absoluteWidth / parentWidth;
+      print('right width = ${rightWidthRelative} | ${right.width} | ${right.absoluteWidth}');
+      right.parentWidth = parentWidth;
+      right.width = rightWidthRelative;
+      parentWidth -= right.absoluteWidth + handleSize;
+      right = right.right;
     }
-    _items.value = _items.value.where((el) => el != cell).toList();
+    final bottomMostRight = cellBottom.findMostRight();
+    bottomMostRight.right = cell.right;
+  }
+
+  _rearrangeConnectionWithPrevious(
+    LayoutCell prev,
+    LayoutCell cell,
+    double handleSize, [
+    isRemoveFromPreviousBottom = true,
+  ]) {
+    print('> \t -> rearrange: isRemoveFromPreviousBottom = ${isRemoveFromPreviousBottom}');
+    final hasBottomOnCell = cell.bottom != null;
+    final hasRightOnCell = cell.right != null;
+    final isHorizontal = cell.isHorizontal;
+    print('> \t\t -> isHorizontal: ${isHorizontal}');
+    print('> \t\t -> hasBottom = ${hasBottomOnCell}');
+    print('> \t\t -> hasRight: ${hasRightOnCell}');
+    if (hasBottomOnCell) {
+      final cellBottom = cell.bottom!;
+      if (isRemoveFromPreviousBottom) {
+        prev.bottom = cellBottom;
+        final shouldConnectRightToBottomRight = hasRightOnCell && cellBottom.hasRight;
+        print('> \t\t\t -> shouldConnectRightToBottomRight: ${shouldConnectRightToBottomRight}');
+        if (shouldConnectRightToBottomRight) {
+          _connectRightToBottomMostRight(cell, cellBottom, handleSize);
+        } else {
+          if (hasRightOnCell) {
+            print('> \t\t\t -> but cell has');
+            cellBottom.right = cell.right;
+            cellBottom.width = cell.width;
+          }
+        }
+      } else {
+        final shouldShiftRightToLeft = cell.isHorizontal && hasRightOnCell;
+        print('> \t\t\t -> shouldShiftRightToLeft: ${shouldShiftRightToLeft}');
+        if (shouldShiftRightToLeft) {
+          final cellRight = cell.right!;
+          prev.right = cellRight;
+          final shouldConnectBottomToRightBottom = cellRight.bottom != null;
+          print('> \t\t\t -> shouldConnectBottomToRightBottom: ${shouldConnectBottomToRightBottom}');
+          if (shouldConnectBottomToRightBottom) {
+            final rightMostBottom = cellRight.findMostBottom();
+            rightMostBottom.bottom = cellBottom;
+          } else {
+            cellRight.bottom = cellBottom;
+          }
+          cellRight.height = -1;
+        } else {
+          final shouldConnectRightToBottomRight = hasRightOnCell && cellBottom.hasRight;
+          print('> \t\t\t -> shouldConnectRightToBottomRight: ${shouldConnectRightToBottomRight}');
+          print('> \t\t\t -> cell width: ${cell.width}');
+          print('> \t\t\t -> cellBottom width: ${cellBottom.width}');
+          prev.right = cellBottom;
+          if (shouldConnectRightToBottomRight) {
+            _connectRightToBottomMostRight(cell, cellBottom, handleSize);
+          } else {
+            print('> \t\t\t -> cell bottom has no right');
+            if (hasRightOnCell) {
+              print('> \t\t\t -> but cell has');
+              cellBottom.right = cell.right;
+              cellBottom.width = cell.width;
+            }
+          }
+        }
+      }
+    } else if (hasRightOnCell) {
+      final cellRight = cell.right!;
+      print('> \t\t -> remove - right only');
+      if (isRemoveFromPreviousBottom) {
+        // print('> \t\t\t -> isPreviousHorizontal (before): ${isPreviousHorizontal}');
+        prev.bottom = cellRight;
+        // print('> \t\t\t -> isPreviousHorizontal (after): ${prev.isHorizontal}');
+      } else {
+        prev.right = cellRight;
+      }
+      cellRight.parentWidth = cell.parentWidth;
+      cellRight.width = cell.width + (cellRight.absoluteWidth + handleSize) / cell.parentWidth;
+    } else {
+      print('> \t\t -> remove - no further connections');
+      if (isRemoveFromPreviousBottom) {
+        prev.bottom = null;
+        prev.height = -1;
+      } else {
+        prev.right = null;
+        prev.width = -1;
+      }
+    }
+  }
+
+  void removeCell(LayoutCell deleteCell, double handleSize) {
+    print('> Layout -> removeCell -> ${deleteCell}');
+    final previous = deleteCell.previous;
+    final hasPrevious = previous != null;
+    // print('> \t -> hasPrevious = ${hasPrevious}');
+    if (hasPrevious) {
+      final isFromBottom = previous.bottom == deleteCell;
+      _rearrangeConnectionWithPrevious(
+        previous,
+        deleteCell,
+        handleSize,
+        isFromBottom,
+      );
+      deleteCell.clearConnection();
+    }
+    _items.value = _items.value.where((el) => el != deleteCell).toList();
   }
 
   List<Widget> createNextSideWithHandler(LayoutCellParams params) {
@@ -118,98 +216,62 @@ class Layout {
     final double handleSizeX = (hasRight ? handlerSize : 0);
     final double handleSizeY = (hasBottom ? handlerSize : 0);
 
-    // print(
-    //   '(${hasHeight ? 'hasHeight(${cell.height})' : 'noHeight'}:${hasWidth ? 'hasWidth' : 'noWidth'}) '
-    //   '(${hasBottom ? 'hasBottom' : 'noBottom'}:${hasRight ? 'hasRight' : 'noRight'}) ',
-    // );
-
     cell.parentWidth = parentWidth;
     cell.parentHeight = parentHeight;
 
     final initialWidth = hasWidth ? cell.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
     final initialHeight = hasHeight ? cell.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
 
+    // print(
+    //     '(${hasHeight ? 'hasHeight(${cell.height})' : 'noHeight'}:${hasWidth ? 'hasWidth(${cell.width})' : 'noWidth'}) '
+    //     // '(${hasBottom ? 'hasBottom' : 'noBottom'}:${hasRight ? 'hasRight' : 'noRight'}) ',
+    //     );
+
     ValueNotifier<double> horizontalResizer = ValueNotifier(initialWidth);
     ValueNotifier<double> verticalResizer = ValueNotifier(initialHeight);
 
-    final cellContent = Column(
-      children: [
-        CellHeader(
-          title: 'Cell',
-          onPointerDown: () => selectedCell.value = cell,
-          onPointerUp: () {
-            print('> Layout -> CellHeader - onPointerUp: ${selectedCell.value} | ${selectedCellRegionSide.value}');
-            final canRearrange = selectedCellRegionSide.value?.side != null;
-            if (canRearrange) {
-              final cellSideIndex = selectedCellRegionSide.value!.cell!.findCellSideIndex(selectedCell.value!);
-              if (cellSideIndex > -1) {
-                final cellSide = CellRegionSide.values[cellSideIndex];
-                print('> \t cell position: ${cellSideIndex} | $cellSide');
-              }
-            }
-            selectedCell.value = null;
-            selectedCellRegionSide.value = null;
-          },
-          onRemove: cell.hasConnections ? () => removeCell(cell) : null,
-        ),
-        Expanded(
-          child: ValueListenableBuilder(
-            valueListenable: selectedCell,
-            builder: (_, LayoutCell? selected, Widget? child) {
-              final hasSelected = selected != null && selected != cell;
-              // print('> cellContent -> hasSelected: ${hasSelected}');
-              return Stack(
-                children: [
-                  cell.widget ?? Container(),
-                  if (hasSelected)
-                    LayoutRegions(
-                      cell,
-                      selectedCell.value!,
-                      selectedCellRegionSide,
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
-    );
+    final isHorizontal = cell.isHorizontal;
 
-    final isBottomFirst = cell.isBottomFirst;
-
-    return SizedBox(
+    return Container(
       width: parentWidth,
       height: parentHeight,
+      color: Colors.primaries[Random().nextInt(Colors.primaries.length)],
       child: ValueListenableBuilder(
-        valueListenable: isBottomFirst ? verticalResizer : horizontalResizer,
-        builder: (_, double blockHeightWidth, Widget? child) {
+        valueListenable: isHorizontal ? verticalResizer : horizontalResizer,
+        builder: (_, double blockHeightWidth, __) {
           final outerSize = blockHeightWidth > handlerSize ? blockHeightWidth : handlerSize;
 
-          if (isBottomFirst && hasBottom) cell.parentHeight = outerSize / parentHeight;
-          if (!isBottomFirst && hasRight) cell.parentWidth = outerSize / parentWidth;
+          // if (isHorizontal && hasBottom) cell.absoluteHeight = outerSize;
+          // if (!isHorizontal && hasRight) cell.absoluteWidth = outerSize;
 
           return Flex(
-            direction: isBottomFirst ? Axis.vertical : Axis.horizontal,
+            direction: isHorizontal ? Axis.vertical : Axis.horizontal,
             children: [
               ValueListenableBuilder(
-                valueListenable: isBottomFirst ? horizontalResizer : verticalResizer,
-                builder: (_, double blockWidthHeight, Widget? child) {
+                valueListenable: isHorizontal ? horizontalResizer : verticalResizer,
+                builder: (_, double blockWidthHeight, __) {
                   final innerSize = blockWidthHeight > handlerSize ? blockWidthHeight : handlerSize;
 
-                  if (isBottomFirst && hasRight) cell.parentWidth = innerSize / parentWidth;
-                  if (!isBottomFirst && hasBottom) cell.parentHeight = innerSize / parentHeight;
+                  // if (isHorizontal && hasRight) cell.absoluteWidth = innerSize;
+                  // if (!isHorizontal && hasBottom) cell.absoluteHeight = innerSize;
+
+                  cell.absoluteWidth = (isHorizontal ? innerSize : outerSize);
+                  cell.absoluteHeight = (isHorizontal ? outerSize : innerSize);
+
+                  cell.width = cell.absoluteWidth / parentWidth;
+                  cell.height = cell.absoluteHeight / parentHeight;
 
                   return Flex(
-                    direction: isBottomFirst ? Axis.horizontal : Axis.vertical,
+                    direction: isHorizontal ? Axis.horizontal : Axis.vertical,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
-                        width: isBottomFirst ? innerSize : outerSize,
-                        height: isBottomFirst ? outerSize : innerSize,
-                        child: cellContent,
+                        width: cell.absoluteWidth,
+                        height: cell.absoluteHeight,
+                        child: _buildCellContent(cell, handlerSize),
                       ),
-                      if (isBottomFirst ? hasRight : hasBottom)
-                        ...createNextSideWithHandler(isBottomFirst
+                      if (isHorizontal ? hasRight : hasBottom)
+                        ...createNextSideWithHandler(isHorizontal
                             ? LayoutCellParams(
                                 cell.right!,
                                 parentWidth - (innerSize + handleSizeX),
@@ -227,7 +289,7 @@ class Layout {
                 },
               ),
               if (hasBottom || hasRight)
-                ...createNextSideWithHandler(isBottomFirst
+                ...createNextSideWithHandler(isHorizontal
                     ? LayoutCellParams(
                         cell.bottom!,
                         parentWidth,
@@ -244,6 +306,55 @@ class Layout {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildCellContent(LayoutCell cell, double handlerSize) {
+    return Column(
+      children: [
+        CellHeader(
+          title: 'Cell',
+          onPointerDown: () => selectedCell.value = cell,
+          onPointerUp: () {
+            final canRearrange = selectedCellRegionSide.value?.side != null;
+            print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
+            if (canRearrange) {
+              final cellSide = selectedCellRegionSide.value?.side;
+              final cellSideIndex = selectedCellRegionSide.value!.cell!.findCellSideIndex(selectedCell.value!);
+              print('> \t cell side: ${cellSide}');
+              print('> \t cell index: ${cellSideIndex}');
+              // if (cellSideIndex > -1) {
+              //   final cellSide = CellRegionSide.values[cellSideIndex];
+              //   print('> \t cell side: $cellSide');
+              // }
+            }
+            selectedCell.value = null;
+            selectedCellRegionSide.value = null;
+          },
+          onRemove: cell.hasConnections ? () => removeCell(cell, handlerSize) : null,
+        ),
+        Expanded(
+          child: ValueListenableBuilder(
+            valueListenable: selectedCell,
+            builder: (_, LayoutCell? selected, Widget? child) {
+              final hasSelected = selected != null && selected != cell;
+              // print('> cellContent -> hasSelected: ${hasSelected}');
+              return Stack(
+                alignment: AlignmentDirectional.center,
+                children: [
+                  cell.widget ?? Container(),
+                  if (hasSelected)
+                    LayoutRegions(
+                      cell,
+                      selectedCell.value!,
+                      selectedCellRegionSide,
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

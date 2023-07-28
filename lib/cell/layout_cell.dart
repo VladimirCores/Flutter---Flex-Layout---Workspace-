@@ -8,11 +8,14 @@ class LayoutCell {
     this.widget,
   });
 
+  double absoluteWidth = -1;
+  double absoluteHeight = -1;
+
   double parentWidth = -1;
   double parentHeight = -1;
 
-  get contentWidth => width * parentWidth;
-  get contentHeight => height * parentHeight;
+  get hasRight => _right != null;
+  get hasBottom => _bottom != null;
 
   double width;
   double height;
@@ -29,26 +32,79 @@ class LayoutCell {
     return -1;
   }
 
-  void _appendOnTop(LayoutCell? value, LayoutCell? current) {
-    if (current != null) order.remove(current);
-    if (value != null) order.add(value);
+  LayoutCell findMostRight() {
+    LayoutCell? cellRight = this;
+    var result = cellRight;
+    while (cellRight != null) {
+      result = cellRight;
+      cellRight = cellRight.right;
+    }
+    return result;
   }
 
-  bool get isBottomFirst => bottom != null && bottom == order.first;
-  bool get hasConnections => order.isNotEmpty || previous != null;
+  int findMostRightIndex() {
+    LayoutCell? cellRight = _right;
+    var result = 0;
+    while (cellRight != null) {
+      result++;
+      cellRight = cellRight.right;
+    }
+    return result;
+  }
+
+  LayoutCell findMostBottom() {
+    LayoutCell? cellBottom = this;
+    var result = cellBottom;
+    while (cellBottom != null) {
+      result = cellBottom;
+      cellBottom = cellBottom.bottom;
+    }
+    return result;
+  }
+
+  void clearConnection() {
+    if (hasRight) order.remove(_right);
+    if (hasBottom) order.remove(_bottom);
+    _right = null;
+    _bottom = null;
+    previous = null;
+  }
+
+  void _appendInstead(LayoutCell? value, LayoutCell? current) {
+    final hasCurrent = current != null;
+    final isCurrentFirst = hasCurrent && current == order.first;
+    // print('> LayoutCell -> appendInstead: isCurrentFirst = ${isCurrentFirst}');
+    if (hasCurrent) order.remove(current);
+    if (value != null) {
+      if (isCurrentFirst) {
+        order.insert(0, value);
+      } else {
+        order.add(value);
+      }
+    }
+  }
+
+  bool get isHorizontal => hasBottom && bottom == order.first;
+  bool get hasConnections => previous != null;
 
   LayoutCell? _right;
   set right(LayoutCell? value) {
-    _appendOnTop(value, _right);
+    final hadValue = hasRight;
+    final hasValue = value != null;
+    // print('> LayoutCell -> change right: had|has value = ${hadValue}|${hasValue}');
+    _appendInstead(value, _right);
     _right = value;
+    if (hasValue) _right!.previous = this;
   }
 
   LayoutCell? get right => _right;
 
   LayoutCell? _bottom;
   set bottom(LayoutCell? value) {
-    _appendOnTop(value, _bottom);
+    final hasValue = value != null;
+    _appendInstead(value, _bottom);
     _bottom = value;
+    if (hasValue) _bottom!.previous = this;
   }
 
   LayoutCell? get bottom => _bottom;
