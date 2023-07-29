@@ -72,7 +72,7 @@ class WorkspaceLayout extends StatelessWidget {
     final c0 = generateCell('0');
     final c1 = generateCell('1');
     final c2 = generateCell('2');
-    // final c3 = generateCell("3");
+    final c3 = generateCell("3");
     // final c4 = generateCell("4");
     // final c5 = generateCell("5");
     // final c6 = generateCell("6");
@@ -86,6 +86,8 @@ class WorkspaceLayout extends StatelessWidget {
     final c1_right = generateCell('1-r');
     layout.addRight(c1, c1_right);
     layout.addRight(c1_right, generateCell('1-r-r'));
+    layout.addBottom(c1_right, c3);
+    layout.addBottom(c3, generateCell('3-b'));
     final c1_bottom = generateCell('1-b');
     final c1_bottom_bottom = generateCell('1-b-b');
     final c1_bottom_right = generateCell('1-b-r');
