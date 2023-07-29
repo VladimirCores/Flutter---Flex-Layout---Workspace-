@@ -42,16 +42,6 @@ class LayoutCell {
     return result;
   }
 
-  int findMostRightIndex() {
-    LayoutCell? cellRight = _right;
-    var result = 0;
-    while (cellRight != null) {
-      result++;
-      cellRight = cellRight.right;
-    }
-    return result;
-  }
-
   LayoutCell findMostBottom() {
     LayoutCell? cellBottom = this;
     var result = cellBottom;
@@ -89,12 +79,17 @@ class LayoutCell {
 
   LayoutCell? _right;
   set right(LayoutCell? value) {
-    final hadValue = hasRight;
     final hasValue = value != null;
     // print('> LayoutCell -> change right: had|has value = ${hadValue}|${hasValue}');
     _appendInstead(value, _right);
+    if (hasValue) {
+      value.previous = this;
+    } else {
+      if (_right != null) {
+        _right!.previous = null;
+      }
+    }
     _right = value;
-    if (hasValue) _right!.previous = this;
   }
 
   LayoutCell? get right => _right;
@@ -103,8 +98,14 @@ class LayoutCell {
   set bottom(LayoutCell? value) {
     final hasValue = value != null;
     _appendInstead(value, _bottom);
+    if (hasValue) {
+      value.previous = this;
+    } else {
+      if (_bottom != null) {
+        _bottom!.previous = null;
+      }
+    }
     _bottom = value;
-    if (hasValue) _bottom!.previous = this;
   }
 
   LayoutCell? get bottom => _bottom;
