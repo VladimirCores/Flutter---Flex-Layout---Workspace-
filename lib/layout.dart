@@ -98,8 +98,8 @@ class Layout {
     final hasRightOnCell = cell.right != null;
     final isHorizontal = cell.isHorizontal;
     print('> \t\t -> isHorizontal: ${isHorizontal}');
-    print('> \t\t -> hasBottom = ${hasBottomOnCell}');
-    print('> \t\t -> hasRight: ${hasRightOnCell}');
+    print('> \t\t -> hasBottomOnCell = ${hasBottomOnCell}');
+    print('> \t\t -> hasRightOnCell: ${hasRightOnCell}');
     if (hasBottomOnCell) {
       final cellBottom = cell.bottom!;
       if (isRemoveFromPreviousBottom) {
@@ -141,9 +141,18 @@ class Layout {
           } else {
             print('> \t\t\t -> cell bottom has no right');
             if (hasRightOnCell) {
-              print('> \t\t\t -> but cell has');
-              cellBottom.right = cell.right;
-              cellBottom.width = cell.width;
+              print('> \t\t\t -> cellBottom.isHorizontal = ${cellBottom.isHorizontal}');
+              if (cellBottom.isHorizontal) {
+                final tempCellBottomBottom = cellBottom.bottom;
+                cellBottom.bottom = null;
+                cellBottom.right = cell.right;
+                cellBottom.bottom = tempCellBottomBottom;
+                cellBottom.width = cell.width;
+              } else {
+                print('> \t\t\t -> but cell has');
+                cellBottom.right = cell.right;
+                cellBottom.width = cell.width;
+              }
             }
           }
         }
