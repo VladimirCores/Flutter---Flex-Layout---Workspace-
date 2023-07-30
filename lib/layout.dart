@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:workspace_layout/cell/cell_header.dart';
 import 'package:workspace_layout/cell/layout_cell.dart';
@@ -214,7 +212,7 @@ class Layout {
     LayoutCell cell, {
     required double parentWidth,
     required double parentHeight,
-    double handlerSize = 8,
+    double handlerSize = 4,
   }) {
     final hasRight = cell.right != null;
     final hasBottom = cell.bottom != null;
@@ -244,7 +242,7 @@ class Layout {
     return Container(
       width: parentWidth,
       height: parentHeight,
-      color: Colors.primaries[Random().nextInt(Colors.primaries.length)],
+      color: cell.colorCode,
       child: ValueListenableBuilder(
         valueListenable: isHorizontal ? verticalResizer : horizontalResizer,
         builder: (_, double blockHeightWidth, __) {
@@ -329,9 +327,84 @@ class Layout {
             print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
             if (canRearrange) {
               final cellSide = selectedCellRegionSide.value?.side;
-              final cellSideIndex = selectedCellRegionSide.value!.cell!.findCellSideIndex(selectedCell.value!);
+              final targetCell = selectedCellRegionSide.value!.cell;
+              final moveCell = selectedCell.value;
+              final cellSideIndex = targetCell!.findCellSideIndex(selectedCell.value!);
+              final isTargetHorizontal = targetCell.isHorizontal;
+              final isTargetWithSideConnections = targetCell.hasRight || targetCell.hasBottom;
+              final isTargetRoot = targetCell.previous == null;
+              final isTargetOnBottom = !isTargetRoot && targetCell.previous!.bottom == targetCell;
+              final isTargetOnRight = !isTargetRoot && targetCell.previous!.right == targetCell;
               print('> \t cell side: ${cellSide}');
               print('> \t cell index: ${cellSideIndex}');
+              removeCell(moveCell!, handlerSize);
+
+              switch (cellSide) {
+                case CellRegionSide.TOP:
+                  if (!isTargetRoot) {
+                    if (isTargetOnBottom) {
+                      targetCell.previous!.bottom = moveCell;
+                    } else if (isTargetOnRight) {
+                      targetCell.previous!.right = moveCell;
+                    }
+                    if (isTargetWithSideConnections) {
+                      if (isTargetHorizontal) {
+                        moveCell.bottom = targetCell;
+                        moveCell.right = targetCell.right;
+                      } else {
+                        moveCell.right = targetCell.right;
+                        moveCell.bottom = targetCell;
+                      }
+                      targetCell.right = null;
+                      moveCell.right?.previous = moveCell;
+                    } else {
+                      moveCell.bottom = targetCell;
+                    }
+                    moveCell.width = targetCell.width;
+                    moveCell.height = -1;
+                    targetCell.width = -1;
+                  }
+                  break;
+                case CellRegionSide.BOTTOM:
+                  final targetAbsoluteHeight = targetCell.absoluteHeight;
+                  final bottomHeight = 1 / targetCell.height - 1;
+                  final bottomAbsoluteHeight = bottomHeight * targetAbsoluteHeight;
+                  final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5;
+                  final bottomAbsoluteHeightAfterMove = bottomAbsoluteHeight + targetAbsoluteHeightAfterMove;
+
+                  moveCell.bottom = targetCell.bottom;
+                  targetCell.bottom = moveCell;
+
+                  print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
+                  targetCell.absoluteHeight = targetAbsoluteHeightAfterMove;
+                  moveCell.absoluteHeight = targetAbsoluteHeightAfterMove;
+                  targetCell.height *= 0.5;
+                  moveCell.height = (targetCell.absoluteHeight - handlerSize) / bottomAbsoluteHeightAfterMove;
+                  moveCell.width = -1;
+                case CellRegionSide.RIGHT:
+                  final targetAbsoluteWidth = targetCell.absoluteWidth;
+                  final rightWidth = 1 / targetCell.width - 1;
+                  final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
+                  final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
+                  final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
+
+                  moveCell.right = targetCell.right;
+                  targetCell.right = moveCell;
+
+                  targetCell.absoluteWidth = targetAbsoluteWidthAfterMove;
+                  moveCell.absoluteWidth = targetAbsoluteWidthAfterMove;
+                  targetCell.width *= 0.5;
+                  if (moveCell.hasRight) {
+                    moveCell.width = (targetCell.absoluteWidth - handlerSize) / rightAbsoluteWidthAfterMove;
+                  } else {
+                    moveCell.width = -1;
+                  }
+                  moveCell.height = -1;
+                case CellRegionSide.LEFT:
+                  break;
+                case null:
+                case CellRegionSide.CENTER:
+              }
               // if (cellSideIndex > -1) {
               //   final cellSide = CellRegionSide.values[cellSideIndex];
               //   print('> \t cell side: $cellSide');

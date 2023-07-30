@@ -1,12 +1,18 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class LayoutCell {
   LayoutCell({
     this.width = -1,
     this.height = -1,
-    this.colorCode = -1,
     this.widget,
-  });
+    randomColor = true,
+  }) {
+    if (randomColor) {
+      colorCode = Colors.primaries[Random().nextInt(Colors.primaries.length)];
+    }
+  }
 
   double absoluteWidth = -1;
   double absoluteHeight = -1;
@@ -19,7 +25,7 @@ class LayoutCell {
 
   double width;
   double height;
-  int colorCode;
+  Color? colorCode;
 
   Widget? widget;
   final order = <LayoutCell>[];

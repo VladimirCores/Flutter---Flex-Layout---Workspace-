@@ -71,13 +71,14 @@ class _LayoutRegionsState extends State<LayoutRegions> {
                 width: CellRegionSide.CENTER == side ? currentSize.width : _size!.width,
                 height: isFullCellHeight ? currentSize.height : _size!.height,
                 alignment: Alignment.center,
-                padding: const EdgeInsets.all(4),
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black.withAlpha(70), width: 1),
-                    color: Colors.black.withAlpha(60),
-                  ),
-                ),
+                color: Colors.black.withAlpha(60),
+                // padding: const EdgeInsets.all(4),
+                // child: Container(
+                //   decoration: BoxDecoration(
+                //     // border: Border.all(color: Colors.black.withAlpha(70), width: 1),
+                //     color: Colors.black.withAlpha(60),
+                //   ),
+                // ),
               ),
             );
           },
