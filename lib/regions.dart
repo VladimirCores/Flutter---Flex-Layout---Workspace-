@@ -26,8 +26,10 @@ class LayoutRegions extends StatefulWidget {
 
 class _LayoutRegionsState extends State<LayoutRegions> {
   final ValueNotifier<CellRegionSide?> _side = ValueNotifier(null);
-  CellRegionSide? _cellSide;
+  CellRegionSide? _connectedCellSide;
   Size? _size;
+
+  List<bool> allowedSides = [true, true, true, true];
 
   void onInside(Size size, CellRegionSide? side) {
     print('> LayoutRegions -> onInside: ${side} | ${size}');
@@ -46,9 +48,17 @@ class _LayoutRegionsState extends State<LayoutRegions> {
     super.initState();
     final cellSideIndex = widget.cell.findCellSideIndex(widget.selectedCell);
     if (cellSideIndex > -1) {
-      _cellSide = CellRegionSide.values[cellSideIndex];
-      print('> LayoutRegions -> initState - Cell position: ${cellSideIndex} | $_cellSide');
+      _connectedCellSide = CellRegionSide.values[cellSideIndex];
+      allowedSides[cellSideIndex] = false;
+      print('> LayoutRegions -> initState - Cell position: ${cellSideIndex} | $_connectedCellSide');
     }
+    if (widget.cell.isRoot) {
+      allowedSides[CellRegionSide.LEFT.index] = false;
+      allowedSides[CellRegionSide.TOP.index] = false;
+      allowedSides[CellRegionSide.RIGHT.index] = !widget.cell.hasRight;
+      allowedSides[CellRegionSide.BOTTOM.index] = !widget.cell.hasBottom;
+    }
+    print('> LayoutRegions -> initState - allowedSides: ${allowedSides}');
   }
 
   @override
@@ -58,74 +68,79 @@ class _LayoutRegionsState extends State<LayoutRegions> {
         ValueListenableBuilder(
           valueListenable: _side,
           builder: (_, side, __) {
-            final skipHighlight = side == null || _size == null || _cellSide == side;
+            final skipHighlight = side == null;
             if (skipHighlight) return Container();
             final currentSize = (context.findRenderObject() as RenderBox).size;
             double? top = CellRegionSide.BOTTOM != side ? 0 : currentSize.height - _size!.height;
             double? left = CellRegionSide.RIGHT != side ? 0 : currentSize.width - _size!.width;
             final isFullCellHeight = FULL_HEIGHT_SIDES.contains(side);
+            final isSideCenter = CellRegionSide.CENTER == side;
             return Positioned(
               top: top,
               left: left,
               child: Container(
-                width: CellRegionSide.CENTER == side ? currentSize.width : _size!.width,
+                width: isSideCenter ? currentSize.width : _size!.width,
                 height: isFullCellHeight ? currentSize.height : _size!.height,
                 alignment: Alignment.center,
                 color: Colors.black.withAlpha(60),
-                // padding: const EdgeInsets.all(4),
-                // child: Container(
-                //   decoration: BoxDecoration(
-                //     // border: Border.all(color: Colors.black.withAlpha(70), width: 1),
-                //     color: Colors.black.withAlpha(60),
-                //   ),
-                // ),
               ),
             );
           },
         ),
-        CellRegions(onInside),
+        CellRegions(onInside, allowedSides),
       ],
     );
   }
 }
 
 class CellRegions extends StatelessWidget {
-  const CellRegions(this.onInside, {Key? key}) : super(key: key);
+  const CellRegions(this.onInside, this.allowedSides, {Key? key}) : super(key: key);
 
   final Function(Size, CellRegionSide?) onInside;
+  final List<bool> allowedSides;
 
   @override
   Widget build(BuildContext context) {
+    final hasTop = allowedSides[CellRegionSide.TOP.index];
+    final hasRight = allowedSides[CellRegionSide.RIGHT.index];
+    final hasBottom = allowedSides[CellRegionSide.BOTTOM.index];
+    final hasLeft = allowedSides[CellRegionSide.LEFT.index];
+    final verticalFlex = 2 + (hasTop ? 0 : 1) + (hasBottom ? 0 : 1);
+    final horizontalFlex = 2 + (hasLeft ? 0 : 1) + (hasRight ? 0 : 1);
     return Column(
       children: [
-        LayoutCellRegion(
-          CellRegionSide.TOP,
-          onInside: onInside,
-        ),
+        if (hasTop)
+          LayoutCellRegion(
+            CellRegionSide.TOP,
+            onInside: onInside,
+          ),
         Expanded(
-          flex: 2,
+          flex: verticalFlex,
           child: Row(
             children: [
+              if (hasLeft)
+                LayoutCellRegion(
+                  CellRegionSide.LEFT,
+                  onInside: onInside,
+                ),
               LayoutCellRegion(
-                CellRegionSide.LEFT,
-                onInside: onInside,
-              ),
-              LayoutCellRegion(
-                flex: 2,
+                flex: horizontalFlex,
                 CellRegionSide.CENTER,
                 onInside: onInside,
               ),
-              LayoutCellRegion(
-                CellRegionSide.RIGHT,
-                onInside: onInside,
-              ),
+              if (hasRight)
+                LayoutCellRegion(
+                  CellRegionSide.RIGHT,
+                  onInside: onInside,
+                ),
             ],
           ),
         ),
-        LayoutCellRegion(
-          CellRegionSide.BOTTOM,
-          onInside: onInside,
-        ),
+        if (hasBottom)
+          LayoutCellRegion(
+            CellRegionSide.BOTTOM,
+            onInside: onInside,
+          ),
       ],
     );
   }
@@ -143,13 +158,17 @@ class LayoutCellRegion extends StatelessWidget {
   final CellRegionSide side;
   final Function(Size, CellRegionSide?) onInside;
 
+  void _onInside(BuildContext context, bool isEnter) {
+    onInside((context.findRenderObject() as RenderBox).size, isEnter ? side : null);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
       child: MouseRegion(
-        onEnter: (_) => onInside((context.findRenderObject() as RenderBox).size, side),
-        onExit: (_) => onInside((context.findRenderObject() as RenderBox).size, null),
+        onEnter: (_) => _onInside(context, true),
+        onExit: (_) => _onInside(context, false),
         child: const SizedBox(
           width: double.maxFinite,
           height: double.maxFinite,
