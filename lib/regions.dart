@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:workspace_layout/cell/layout_cell.dart';
-import 'package:workspace_layout/consts/enums.dart';
+import 'package:workspace/cell/layout_cell.dart';
+import 'package:workspace/consts/enums.dart';
 
 const FULL_HEIGHT_SIDES = [
   CellRegionSide.RIGHT,
@@ -46,9 +46,17 @@ class _LayoutRegionsState extends State<LayoutRegions> {
   @override
   void initState() {
     super.initState();
-    final cellSideIndex = widget.cell.findCellSideIndex(widget.selectedCell);
+    final cell = widget.cell;
+    final selected = widget.selectedCell;
+    final cellSideIndex = cell.findCellSideIndex(selected);
     if (cellSideIndex > -1) {
       _connectedCellSide = CellRegionSide.values[cellSideIndex];
+
+      // final isSelectedCellFromRightAndVertical = _connectedCellSide == CellRegionSide.RIGHT &&
+      //     (cell.hasBottom || selected.hasBottom) &&
+      //     cell.hasRight &&
+      //     cell.right == widget.selectedCell;
+
       allowedSides[cellSideIndex] = false;
       print('> LayoutRegions -> initState - Cell position: ${cellSideIndex} | $_connectedCellSide');
     }

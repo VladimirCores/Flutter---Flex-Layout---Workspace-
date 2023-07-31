@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:workspace_layout/cell/layout_cell.dart';
-import 'package:workspace_layout/inherited.dart';
-import 'package:workspace_layout/layout.dart';
+import 'package:workspace/cell/layout_cell.dart';
+import 'package:workspace/inherited.dart';
+import 'package:workspace/layout.dart';
 
 void main() {
   runApp(WorkspaceLayout());
@@ -21,8 +21,9 @@ class WorkspaceLayout extends StatelessWidget {
     layout.addRight(layout.root, c1);
     layout.addBottom(layout.root, c2);
     layout.addRight(c2, c2_right);
-    // layout.addRight(c2_right, generateCell('2-r-r'));
-    // layout.addBottom(c2, generateCell('2-b'));
+    layout.addRight(c2_right, generateCell('2-r-r'));
+    layout.addBottom(c2_right, generateCell('2-r-b'));
+    layout.addBottom(c2, generateCell('2-b'));
     final c1_right = generateCell('1-r');
     layout.addRight(c1, c1_right);
     // layout.addRight(c1_right, generateCell('1-r-r'));

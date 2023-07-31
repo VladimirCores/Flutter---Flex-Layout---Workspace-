@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:workspace_layout/cell/cell_header.dart';
-import 'package:workspace_layout/cell/layout_cell.dart';
-import 'package:workspace_layout/consts/enums.dart';
-import 'package:workspace_layout/handler.dart';
-import 'package:workspace_layout/regions.dart';
+import 'package:workspace/cell/cell_header.dart';
+import 'package:workspace/cell/layout_cell.dart';
+import 'package:workspace/consts/enums.dart';
+import 'package:workspace/handler.dart';
+import 'package:workspace/regions.dart';
 
 class LayoutHandleParams {
   final ValueNotifier<double> resizer;
@@ -428,6 +428,13 @@ class Layout {
 
                   movingCell.right = targetCell.right;
                   targetCell.right = movingCell;
+
+                  // if (targetCell.hasBottom) {
+                  //   targetCell.switchOrientation();
+                  //   if (movingCell.hasRight && movingCell.isHorizontal) {
+                  //     movingCell.switchOrientation();
+                  //   }
+                  // }
 
                   targetCell.absoluteWidth = targetAbsoluteWidthAfterMove;
                   movingCell.absoluteWidth = targetAbsoluteWidthAfterMove;
