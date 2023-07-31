@@ -353,17 +353,22 @@ class Layout {
               final movingCell = selectedCell.value!;
               final cellSideIndex = targetCell!.findCellSideIndex(selectedCell.value!);
               final isMovingCellPrevious = movingCell == targetCell.previous;
-              final isTargetHorizontal = targetCell.isHorizontal;
-              final isTargetWithSideConnections = targetCell.hasRight || targetCell.hasBottom;
               final isTargetRoot = targetCell.previous == null;
-              final isTargetOnBottom = !isTargetRoot && targetCell.previous!.bottom == targetCell;
-              final isTargetOnRight = !isTargetRoot && targetCell.previous!.right == targetCell;
+
               print('> \t cell side: ${cellSide}');
               print('> \t cell index: ${cellSideIndex}');
 
+              final isMovingCellBecomeRoot = isTargetRoot && cellSide == CellRegionSide.LEFT;
+
               if (REMOVABLE_SIDES.contains(cellSide)) {
-                removeCell(movingCell, handlerSize, keep: true, willBecomeRoot: isTargetRoot);
+                removeCell(movingCell, handlerSize, keep: true, willBecomeRoot: isMovingCellBecomeRoot);
               }
+
+              final isTargetHorizontal = targetCell.isHorizontal;
+              final isTargetWithSideConnections = targetCell.hasRight || targetCell.hasBottom;
+
+              final isTargetOnBottom = !isTargetRoot && targetCell.previous!.bottom == targetCell;
+              final isTargetOnRight = !isTargetRoot && targetCell.previous!.right == targetCell;
 
               switch (cellSide) {
                 case CellRegionSide.TOP:
@@ -388,6 +393,7 @@ class Layout {
                     } else {
                       movingCell.bottom = targetCell;
                     }
+
                     movingCell.width = targetCell.width;
                     movingCell.height = -1;
                     targetCell.width = -1;
@@ -447,8 +453,8 @@ class Layout {
                       movingCell.bottom = bottom;
                     }
                     movingCell.absoluteWidth = targetCell.absoluteWidth;
-                    movingCell.width = movingCell.height = -1;
-                    targetCell.width = targetCell.height = -1;
+                    movingCell.width = targetCell.width = targetCell.width * 0.5;
+                    movingCell.height = targetCell.height;
                   } else {
                     final targetAbsoluteWidth = targetCell.absoluteWidth;
                     final rightWidth = 1 / targetCell.width - 1;
