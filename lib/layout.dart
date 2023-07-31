@@ -64,6 +64,12 @@ class Layout {
 
   LayoutCell addBottom(LayoutCell to, LayoutCell cell) {
     _breakPrevious(cell);
+    if (to.hasBottom) {
+      if (cell.hasBottom && cell.hasConnections) {
+        cell.previous!.bottom = cell.bottom;
+      }
+      cell.bottom = to.bottom;
+    }
     to.bottom = cell;
     cell.previous = to;
     return add(cell);
@@ -110,6 +116,7 @@ class Layout {
           if (hasRightOnCell) {
             print('> \t\t\t -> but cell has');
             cellBottom.right = cell.right;
+            cellBottom.absoluteWidth = cell.absoluteWidth;
             cellBottom.width = cell.width;
           }
         }
@@ -145,12 +152,12 @@ class Layout {
                 cellBottom.bottom = null;
                 cellBottom.right = cell.right;
                 cellBottom.bottom = tempCellBottomBottom;
-                cellBottom.width = cell.width;
               } else {
                 print('> \t\t\t -> but cell has');
                 cellBottom.right = cell.right;
-                cellBottom.width = cell.width;
               }
+              cellBottom.absoluteWidth = cell.absoluteWidth;
+              cellBottom.width = cell.width;
             }
           }
         }
@@ -179,11 +186,11 @@ class Layout {
     }
   }
 
-  void removeCell(LayoutCell deleteCell, double handleSize) {
-    print('> Layout -> removeCell -> ${deleteCell}');
+  void removeCell(LayoutCell deleteCell, double handleSize, {keep = false, willBecomeRoot = false}) {
+    print('> Layout -> removeCell: keep = ${keep}');
     final previous = deleteCell.previous;
     final hasPrevious = previous != null;
-    // print('> \t -> hasPrevious = ${hasPrevious}');
+    print('> \t -> hasPrevious = ${hasPrevious}');
     if (hasPrevious) {
       final isFromBottom = previous.bottom == deleteCell;
       _rearrangeConnectionWithPrevious(
@@ -194,7 +201,15 @@ class Layout {
       );
       deleteCell.clearConnection();
     }
-    _items.value = _items.value.where((el) => el != deleteCell).toList();
+    if (keep) {
+      if (willBecomeRoot) {
+        _items.value.remove(deleteCell);
+        _items.value.insert(0, deleteCell);
+      }
+      _items.notifyListeners();
+    } else {
+      _items.value = _items.value.where((el) => el != deleteCell).toList();
+    }
   }
 
   List<Widget> createNextSideWithHandler(LayoutCellParams params) {
@@ -316,6 +331,13 @@ class Layout {
     );
   }
 
+  final REMOVABLE_SIDES = [
+    CellRegionSide.TOP,
+    CellRegionSide.RIGHT,
+    CellRegionSide.BOTTOM,
+    CellRegionSide.LEFT,
+  ];
+
   Widget _buildCellContent(LayoutCell cell, double handlerSize) {
     return Column(
       children: [
@@ -323,13 +345,14 @@ class Layout {
           title: 'Cell',
           onPointerDown: () => selectedCell.value = cell,
           onPointerUp: () {
-            final canRearrange = selectedCellRegionSide.value?.side != null;
+            final canRearrange = selectedCellRegionSide.value?.side != null && selectedCell.value != null;
             print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
             if (canRearrange) {
               final cellSide = selectedCellRegionSide.value?.side;
               final targetCell = selectedCellRegionSide.value!.cell;
-              final moveCell = selectedCell.value;
+              final movingCell = selectedCell.value!;
               final cellSideIndex = targetCell!.findCellSideIndex(selectedCell.value!);
+              final isMovingCellPrevious = movingCell == targetCell.previous;
               final isTargetHorizontal = targetCell.isHorizontal;
               final isTargetWithSideConnections = targetCell.hasRight || targetCell.hasBottom;
               final isTargetRoot = targetCell.previous == null;
@@ -337,31 +360,36 @@ class Layout {
               final isTargetOnRight = !isTargetRoot && targetCell.previous!.right == targetCell;
               print('> \t cell side: ${cellSide}');
               print('> \t cell index: ${cellSideIndex}');
-              removeCell(moveCell!, handlerSize);
+
+              if (REMOVABLE_SIDES.contains(cellSide)) {
+                removeCell(movingCell, handlerSize, keep: true, willBecomeRoot: isTargetRoot);
+              }
 
               switch (cellSide) {
                 case CellRegionSide.TOP:
-                  if (!isTargetRoot) {
+                  if (isTargetRoot) {
+                  } else {
                     if (isTargetOnBottom) {
-                      targetCell.previous!.bottom = moveCell;
+                      targetCell.previous!.bottom = movingCell;
                     } else if (isTargetOnRight) {
-                      targetCell.previous!.right = moveCell;
+                      targetCell.previous!.right = movingCell;
                     }
                     if (isTargetWithSideConnections) {
-                      if (isTargetHorizontal) {
-                        moveCell.bottom = targetCell;
-                        moveCell.right = targetCell.right;
-                      } else {
-                        moveCell.right = targetCell.right;
-                        moveCell.bottom = targetCell;
-                      }
+                      final right = targetCell.right;
                       targetCell.right = null;
-                      moveCell.right?.previous = moveCell;
+                      if (isTargetHorizontal) {
+                        movingCell.bottom = targetCell;
+                        movingCell.right = right;
+                      } else {
+                        movingCell.right = right;
+                        movingCell.bottom = targetCell;
+                      }
+                      movingCell.right?.previous = movingCell;
                     } else {
-                      moveCell.bottom = targetCell;
+                      movingCell.bottom = targetCell;
                     }
-                    moveCell.width = targetCell.width;
-                    moveCell.height = -1;
+                    movingCell.width = targetCell.width;
+                    movingCell.height = -1;
                     targetCell.width = -1;
                   }
                   break;
@@ -372,43 +400,91 @@ class Layout {
                   final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5;
                   final bottomAbsoluteHeightAfterMove = bottomAbsoluteHeight + targetAbsoluteHeightAfterMove;
 
-                  moveCell.bottom = targetCell.bottom;
-                  targetCell.bottom = moveCell;
+                  movingCell.bottom = targetCell.bottom;
+                  targetCell.bottom = movingCell;
 
                   print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
                   targetCell.absoluteHeight = targetAbsoluteHeightAfterMove;
-                  moveCell.absoluteHeight = targetAbsoluteHeightAfterMove;
+                  movingCell.absoluteHeight = targetAbsoluteHeightAfterMove;
                   targetCell.height *= 0.5;
-                  moveCell.height = (targetCell.absoluteHeight - handlerSize) / bottomAbsoluteHeightAfterMove;
-                  moveCell.width = -1;
+                  movingCell.height = (targetCell.absoluteHeight - handlerSize) / bottomAbsoluteHeightAfterMove;
+                  movingCell.width = -1;
                 case CellRegionSide.RIGHT:
+                  print('> RIGHT');
                   final targetAbsoluteWidth = targetCell.absoluteWidth;
                   final rightWidth = 1 / targetCell.width - 1;
                   final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
                   final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
                   final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
 
-                  moveCell.right = targetCell.right;
-                  targetCell.right = moveCell;
+                  print('> \t targetCell.isHorizontal: ${targetCell.isHorizontal}');
+                  print('> \t targetCell.hasRight: ${targetCell.hasRight}');
+
+                  movingCell.right = targetCell.right;
+                  targetCell.right = movingCell;
 
                   targetCell.absoluteWidth = targetAbsoluteWidthAfterMove;
-                  moveCell.absoluteWidth = targetAbsoluteWidthAfterMove;
+                  movingCell.absoluteWidth = targetAbsoluteWidthAfterMove;
                   targetCell.width *= 0.5;
-                  if (moveCell.hasRight) {
-                    moveCell.width = (targetCell.absoluteWidth - handlerSize) / rightAbsoluteWidthAfterMove;
+                  if (movingCell.hasRight) {
+                    movingCell.width = (targetCell.absoluteWidth - handlerSize) / rightAbsoluteWidthAfterMove;
                   } else {
-                    moveCell.width = -1;
+                    movingCell.width = -1;
                   }
-                  moveCell.height = -1;
+                  movingCell.height = -1;
                 case CellRegionSide.LEFT:
+                  print('> LEFT: isTargetRoot = ${isTargetRoot}');
+                  print('> \t\t isTargetHorizontal = ${isTargetHorizontal}');
+                  print('> \t\t movingCell.previous = ${movingCell.previous}');
+                  if (isTargetRoot) {
+                    final bottom = targetCell.bottom;
+                    targetCell.bottom = null;
+                    if (isTargetHorizontal) {
+                      movingCell.bottom = bottom;
+                      movingCell.right = targetCell;
+                    } else {
+                      movingCell.right = targetCell;
+                      movingCell.bottom = bottom;
+                    }
+                    movingCell.absoluteWidth = targetCell.absoluteWidth;
+                    movingCell.width = movingCell.height = -1;
+                    targetCell.width = targetCell.height = -1;
+                  } else {
+                    final targetAbsoluteWidth = targetCell.absoluteWidth;
+                    final rightWidth = 1 / targetCell.width - 1;
+                    final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
+                    final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
+                    final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
+
+                    targetCell.absoluteWidth = movingCell.absoluteWidth = targetAbsoluteWidthAfterMove;
+                    movingCell.width *= 0.5;
+
+                    if (targetCell.hasRight) {
+                      targetCell.width = (targetAbsoluteWidthAfterMove - handlerSize) / rightAbsoluteWidthAfterMove;
+                    } else {
+                      movingCell.width = targetCell.width = -1;
+                    }
+                    print('> \t isTargetOnBottom = ${isTargetOnBottom}');
+                    print('> \t isTargetOnRight = ${isTargetOnRight}');
+                    if (!isMovingCellPrevious) {
+                      if (isTargetOnBottom) {
+                        targetCell.previous!.bottom = movingCell;
+                      } else if (isTargetOnRight) {
+                        targetCell.previous!.right = movingCell;
+                      }
+                    } else {
+                      if (targetCell.previous!.right == targetCell) {
+                        targetCell.previous!.right = movingCell;
+                      } else if (targetCell.previous!.bottom == targetCell) {
+                        targetCell.previous!.bottom = movingCell;
+                      }
+                    }
+                    movingCell.right = targetCell;
+                  }
                   break;
-                case null:
                 case CellRegionSide.CENTER:
+                case null:
               }
-              // if (cellSideIndex > -1) {
-              //   final cellSide = CellRegionSide.values[cellSideIndex];
-              //   print('> \t cell side: $cellSide');
-              // }
             }
             selectedCell.value = null;
             selectedCellRegionSide.value = null;

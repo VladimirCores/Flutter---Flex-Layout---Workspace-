@@ -58,6 +58,17 @@ class LayoutCell {
     return result;
   }
 
+  bool switchOrientation() {
+    if (!hasBottom || !hasRight) {
+      return false;
+    } else {
+      final last = order.removeLast();
+      order.insert(0, last);
+    }
+    print('> LayoutCell -> switchOrientation');
+    return true;
+  }
+
   void clearConnection() {
     if (hasRight) order.remove(_right);
     if (hasBottom) order.remove(_bottom);
@@ -85,9 +96,10 @@ class LayoutCell {
 
   LayoutCell? _right;
   set right(LayoutCell? value) {
-    final hasValue = value != null;
     // print('> LayoutCell -> change right: had|has value = ${hadValue}|${hasValue}');
     _appendInstead(value, _right);
+    // _reconnectWithSide(value, _right);
+    final hasValue = value != null;
     if (hasValue) {
       value.previous = this;
     } else {
@@ -98,12 +110,24 @@ class LayoutCell {
     _right = value;
   }
 
+  void _reconnectWithSide(LayoutCell? cell, LayoutCell? side) {
+    final hasValue = cell != null;
+    if (hasValue) {
+      cell.previous = this;
+    } else {
+      if (side != null) {
+        side.previous = null;
+      }
+    }
+  }
+
   LayoutCell? get right => _right;
 
   LayoutCell? _bottom;
   set bottom(LayoutCell? value) {
-    final hasValue = value != null;
     _appendInstead(value, _bottom);
+    // _reconnectWithSide(value, _bottom);
+    final hasValue = value != null;
     if (hasValue) {
       value.previous = this;
     } else {
