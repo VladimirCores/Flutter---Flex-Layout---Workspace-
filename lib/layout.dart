@@ -40,7 +40,7 @@ class Layout {
   final ValueNotifier<LayoutCell?> selectedCell = ValueNotifier(null);
   final ValueNotifier<({LayoutCell? cell, CellRegionSide? side})?> selectedCellRegionSide = ValueNotifier(null);
 
-  LayoutCell get chain => _items.value.first;
+  LayoutCell get root => _items.value.first;
   ValueNotifier<List<LayoutCell>> get cells => _items;
 
   _breakPrevious(LayoutCell cell) {
@@ -65,7 +65,7 @@ class Layout {
   LayoutCell addBottom(LayoutCell to, LayoutCell cell) {
     _breakPrevious(cell);
     if (to.hasBottom) {
-      if (cell.hasBottom && cell.hasConnections) {
+      if (cell.hasBottom && !cell.isRoot) {
         cell.previous!.bottom = cell.bottom;
       }
       cell.bottom = to.bottom;
@@ -495,27 +495,29 @@ class Layout {
             selectedCell.value = null;
             selectedCellRegionSide.value = null;
           },
-          onRemove: cell.hasConnections ? () => removeCell(cell, handlerSize) : null,
+          onRemove: !cell.isRoot ? () => removeCell(cell, handlerSize) : null,
         ),
         Expanded(
-          child: ValueListenableBuilder(
-            valueListenable: selectedCell,
-            builder: (_, LayoutCell? selected, Widget? child) {
-              final hasSelected = selected != null && selected != cell;
-              // print('> cellContent -> hasSelected: ${hasSelected}');
-              return Stack(
-                alignment: AlignmentDirectional.center,
-                children: [
-                  cell.widget ?? Container(),
-                  if (hasSelected)
-                    LayoutRegions(
-                      cell,
-                      selectedCell.value!,
-                      selectedCellRegionSide,
-                    ),
-                ],
-              );
-            },
+          child: Stack(
+            alignment: AlignmentDirectional.center,
+            children: [
+              cell.widget ?? Container(),
+              ValueListenableBuilder(
+                valueListenable: selectedCell,
+                builder: (_, LayoutCell? selected, __) {
+                  final hasSelected = selected != null;
+                  final isDifferent = selected != cell;
+                  // print('> cellContent -> hasSelected: ${hasSelected}');
+                  return hasSelected && isDifferent
+                      ? LayoutRegions(
+                          cell,
+                          selected,
+                          selectedCellRegionSide,
+                        )
+                      : Container();
+                },
+              ),
+            ],
           ),
         ),
       ],

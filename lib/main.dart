@@ -18,8 +18,8 @@ class WorkspaceLayout extends StatelessWidget {
 
     layout.add(c0);
     final c2_right = generateCell('2-r');
-    layout.addRight(layout.chain, c1);
-    layout.addBottom(layout.chain, c2);
+    layout.addRight(layout.root, c1);
+    layout.addBottom(layout.root, c2);
     layout.addRight(c2, c2_right);
     // layout.addRight(c2_right, generateCell('2-r-r'));
     // layout.addBottom(c2, generateCell('2-b'));
@@ -65,7 +65,7 @@ class WorkspaceLayout extends StatelessWidget {
                 valueListenable: layout.cells,
                 builder: (_, List<LayoutCell> value, __) {
                   return layout.positionWidgetsFrom(
-                    layout.chain,
+                    layout.root,
                     parentWidth: constraints.maxWidth,
                     parentHeight: constraints.maxHeight,
                   );

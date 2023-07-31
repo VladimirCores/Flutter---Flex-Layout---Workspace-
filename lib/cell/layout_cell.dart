@@ -91,8 +91,8 @@ class LayoutCell {
     }
   }
 
+  bool get isRoot => previous == null;
   bool get isHorizontal => hasBottom && bottom == order.first;
-  bool get hasConnections => previous != null;
 
   LayoutCell? _right;
   set right(LayoutCell? value) {
