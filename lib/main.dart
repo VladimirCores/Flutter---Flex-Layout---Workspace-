@@ -26,26 +26,26 @@ class WorkspaceApp extends StatelessWidget {
     workspace.addBottom(c2, generateCell('2-b'));
     final c1_right = generateCell('1-r');
     workspace.addRight(c1, c1_right);
-    // layout.addRight(c1_right, generateCell('1-r-r'));
-    // layout.addBottom(c1_right, c3);
-    // layout.addBottom(c3, generateCell('3-b'));
-    // final c1_bottom = generateCell('1-b');
+    // workspace.addRight(c1_right, generateCell('1-r-r'));
+    // workspace.addBottom(c1_right, c3);
+    // workspace.addBottom(c3, generateCell('3-b'));
+    final c1_bottom = generateCell('1-b');
     // final c1_bottom_bottom = generateCell('1-b-b');
     // final c1_bottom_right = generateCell('1-b-r');
-    // layout.addBottom(c1, c1_bottom);
-    // layout.addRight(c1_bottom, c1_bottom_right);
-    // layout.addBottom(c1_bottom, c1_bottom_bottom);
-    // layout.addRight(c1_bottom_bottom, generateCell('1-b-b-r'));
-    // layout.addRight(c1_bottom_right, generateCell('1-b-r-r'));
+    workspace.addBottom(c1, c1_bottom);
+    // workspace.addRight(c1_bottom, c1_bottom_right);
+    // workspace.addBottom(c1_bottom, c1_bottom_bottom);
+    // workspace.addRight(c1_bottom_bottom, generateCell('1-b-b-r'));
+    // workspace.addRight(c1_bottom_right, generateCell('1-b-r-r'));
     //
-    // layout.addRight(c3, c4);
-    // layout.addRight(c4, generateCell());
+    // workspace.addRight(c3, c4);
+    // workspace.addRight(c4, generateCell());
     // //
-    // layout.addRight(c1, c2);
-    // layout.addBottom(c2, c5);
+    // workspace.addRight(c1, c2);
+    // workspace.addBottom(c2, c5);
     //
-    // layout.addRight(c5, c6);
-    // layout.addBottom(c6, generateCell());
+    // workspace.addRight(c5, c6);
+    // workspace.addBottom(c6, generateCell());
   }
 
   final Workspace workspace = Workspace();
@@ -59,7 +59,7 @@ class WorkspaceApp extends StatelessWidget {
       theme: ThemeData(scaffoldBackgroundColor: Colors.black12),
       home: Scaffold(
         body: WorkspaceInherited(
-          layout: workspace,
+          workspace: workspace,
           child: LayoutBuilder(
             builder: (context, constraints) {
               return ValueListenableBuilder(

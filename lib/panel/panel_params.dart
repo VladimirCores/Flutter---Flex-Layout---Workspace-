@@ -4,10 +4,9 @@ import 'package:workspace/panel.dart';
 class WorkspaceHandleParams {
   final ValueNotifier<double> resizer;
   final double parentSize;
-  final double size;
   final bool isHorizontal;
 
-  WorkspaceHandleParams(this.resizer, this.parentSize, this.size, this.isHorizontal);
+  WorkspaceHandleParams(this.resizer, this.parentSize, this.isHorizontal);
 }
 
 class WorkspacePanelParams {

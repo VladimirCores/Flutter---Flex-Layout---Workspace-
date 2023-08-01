@@ -187,13 +187,13 @@ class Workspace {
     }
   }
 
-  List<Widget> _createNextSideWithHandler(WorkspacePanelParams params) {
+  List<Widget> _createNextSideWithHandler(WorkspacePanelParams params, bool toRight, bool toBottom) {
     return [
-      Handler(params.handleParams),
+      Handler(HANDLER_SIZE, params.handleParams),
       positionPanelsAt(
         params.panel,
-        parentWidth: params.parentWidth,
-        parentHeight: params.parentHeight,
+        parentWidth: params.parentWidth - (toRight ? HANDLER_SIZE : 0),
+        parentHeight: params.parentHeight - (toBottom ? HANDLER_SIZE : 0),
       ),
     ];
   }
@@ -233,14 +233,11 @@ class Workspace {
     final hasWidth = panel.width > 0;
     final hasHeight = panel.height > 0;
 
-    final double handleSizeX = (hasRight ? HANDLER_SIZE : 0);
-    final double handleSizeY = (hasBottom ? HANDLER_SIZE : 0);
-
     panel.parentWidth = parentWidth;
     panel.parentHeight = parentHeight;
 
-    final initialWidth = hasWidth ? panel.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
-    final initialHeight = hasHeight ? panel.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
+    final initialWidth = hasWidth ? panel.width * parentWidth : parentWidth / (hasRight ? 2 : 1);
+    final initialHeight = hasHeight ? panel.height * parentHeight : parentHeight / (hasBottom ? 2 : 1);
 
     ValueNotifier<double> horizontalResizer = ValueNotifier(initialWidth);
     ValueNotifier<double> verticalResizer = ValueNotifier(initialHeight);
@@ -254,18 +251,14 @@ class Workspace {
       child: ValueListenableBuilder(
         valueListenable: isHorizontal ? verticalResizer : horizontalResizer,
         builder: (_, double blockHeightWidth, __) {
-          final outerSize = blockHeightWidth > HANDLER_SIZE ? blockHeightWidth : HANDLER_SIZE;
-
           return Flex(
             direction: isHorizontal ? Axis.vertical : Axis.horizontal,
             children: [
               ValueListenableBuilder(
                 valueListenable: isHorizontal ? horizontalResizer : verticalResizer,
                 builder: (_, double blockWidthHeight, __) {
-                  final innerSize = blockWidthHeight > HANDLER_SIZE ? blockWidthHeight : HANDLER_SIZE;
-
-                  panel.absoluteWidth = (isHorizontal ? innerSize : outerSize);
-                  panel.absoluteHeight = (isHorizontal ? outerSize : innerSize);
+                  panel.absoluteWidth = (isHorizontal ? blockWidthHeight : blockHeightWidth);
+                  panel.absoluteHeight = (isHorizontal ? blockHeightWidth : blockWidthHeight);
 
                   panel.width = panel.absoluteWidth / parentWidth;
                   panel.height = panel.absoluteHeight / parentHeight;
@@ -291,37 +284,43 @@ class Workspace {
                         // child: PanelContent(panel),
                       ),
                       if (isHorizontal ? hasRight : hasBottom)
-                        ..._createNextSideWithHandler(isHorizontal
-                            ? WorkspacePanelParams(
-                                panel.right!,
-                                parentWidth - (innerSize + handleSizeX),
-                                outerSize,
-                                WorkspaceHandleParams(horizontalResizer, outerSize, handleSizeX, false),
-                              )
-                            : WorkspacePanelParams(
-                                panel.bottom!,
-                                outerSize,
-                                parentHeight - (innerSize + handleSizeY),
-                                WorkspaceHandleParams(verticalResizer, outerSize, handleSizeY, true),
-                              )),
+                        ..._createNextSideWithHandler(
+                            isHorizontal
+                                ? WorkspacePanelParams(
+                                    panel.right!,
+                                    parentWidth - panel.absoluteWidth,
+                                    panel.absoluteHeight,
+                                    WorkspaceHandleParams(horizontalResizer, panel.absoluteHeight, false),
+                                  )
+                                : WorkspacePanelParams(
+                                    panel.bottom!,
+                                    panel.absoluteWidth,
+                                    parentHeight - panel.absoluteHeight,
+                                    WorkspaceHandleParams(verticalResizer, panel.absoluteWidth, true),
+                                  ),
+                            isHorizontal && panel.hasRight,
+                            panel.hasBottom),
                     ],
                   );
                 },
               ),
               if (hasBottom || hasRight)
-                ..._createNextSideWithHandler(isHorizontal
-                    ? WorkspacePanelParams(
-                        panel.bottom!,
-                        parentWidth,
-                        parentHeight - (outerSize + handleSizeY),
-                        WorkspaceHandleParams(verticalResizer, parentWidth, handleSizeY, true),
-                      )
-                    : WorkspacePanelParams(
-                        panel.right!,
-                        parentWidth - (outerSize + handleSizeX),
-                        parentHeight,
-                        WorkspaceHandleParams(horizontalResizer, parentHeight, handleSizeX, false),
-                      ))
+                ..._createNextSideWithHandler(
+                    isHorizontal
+                        ? WorkspacePanelParams(
+                            panel.bottom!,
+                            parentWidth,
+                            parentHeight - blockHeightWidth,
+                            WorkspaceHandleParams(verticalResizer, parentWidth, true),
+                          )
+                        : WorkspacePanelParams(
+                            panel.right!,
+                            parentWidth - blockHeightWidth,
+                            parentHeight,
+                            WorkspaceHandleParams(horizontalResizer, parentHeight, false),
+                          ),
+                    panel.hasRight,
+                    isHorizontal && panel.hasBottom)
             ],
           );
         },
@@ -462,52 +461,58 @@ class Workspace {
     movingPanel.height = -1;
   }
 
-  void _positionPanelBottom(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
-    final targetAbsoluteHeight = targetPanel.absoluteHeight;
-    final bottomHeight = 1 / targetPanel.height - 1;
+  void _positionPanelBottom(WorkspacePanel bottomPanel, WorkspacePanel movingPanel) {
+    final targetAbsoluteHeight = bottomPanel.absoluteHeight;
+    final bottomHeight = 1 / bottomPanel.height - 1;
     final bottomAbsoluteHeight = bottomHeight * targetAbsoluteHeight;
-    final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5;
+    final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5 - HANDLER_SIZE;
     final bottomAbsoluteHeightAfterMove = bottomAbsoluteHeight + targetAbsoluteHeightAfterMove;
 
-    movingPanel.bottom = targetPanel.bottom;
-    targetPanel.bottom = movingPanel;
+    movingPanel.bottom = bottomPanel.bottom;
+    bottomPanel.bottom = movingPanel;
 
     print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
-    targetPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
+    bottomPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
     movingPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
-    targetPanel.height = (targetPanel.height - HANDLER_SIZE / bottomAbsoluteHeightAfterMove) / 2;
-    movingPanel.height = targetPanel.absoluteHeight / bottomAbsoluteHeightAfterMove;
+
+    bottomPanel.height = bottomPanel.height / 2;
+    movingPanel.height = bottomPanel.absoluteHeight / bottomAbsoluteHeightAfterMove;
     movingPanel.width = -1;
   }
 
-  void _positionPanelTop(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
-    final isTargetOnBottom = targetPanel.previous!.bottom == targetPanel;
-    final isTargetOnRight = targetPanel.previous!.right == targetPanel;
-    if (targetPanel.isRoot) {
-    } else {
-      if (isTargetOnBottom) {
-        targetPanel.previous!.bottom = movingPanel;
-      } else if (isTargetOnRight) {
-        targetPanel.previous!.right = movingPanel;
-      }
-      if (targetPanel.hasRight || targetPanel.hasBottom) {
-        final right = targetPanel.right;
-        targetPanel.right = null;
-        if (targetPanel.isHorizontal) {
-          movingPanel.bottom = targetPanel;
-          movingPanel.right = right;
-        } else {
-          movingPanel.right = right;
-          movingPanel.bottom = targetPanel;
-        }
-        movingPanel.right?.previous = movingPanel;
-      } else {
-        movingPanel.bottom = targetPanel;
-      }
+  void _positionPanelTop(WorkspacePanel topPanel, WorkspacePanel movingPanel) {
+    final previous = topPanel.previous!;
+    final isTopOnBottom = previous.bottom == topPanel;
+    final isTopOnRight = previous.right == topPanel;
 
-      movingPanel.width = targetPanel.width;
-      movingPanel.height = targetPanel.height = -1;
-      targetPanel.width = -1;
+    final heightAbsolute = topPanel.absoluteHeight;
+    final heightAbsoluteHalf = 0.5 * heightAbsolute - HANDLER_SIZE;
+
+    final heightBottomRelative = 1 / topPanel.height - 1;
+    final heightBottomAbsolute = heightBottomRelative * heightAbsolute;
+    final heightBottomAbsoluteAfter = heightAbsoluteHalf + heightBottomAbsolute;
+
+    print('> \t bottomHeight: ${heightAbsolute}|${heightBottomAbsolute}|${heightBottomAbsoluteAfter}');
+
+    if (topPanel.isRoot) {
+    } else {
+      if (isTopOnBottom) {
+        previous.bottom = movingPanel;
+      } else if (isTopOnRight) {
+        previous.right = movingPanel;
+      }
+      if (topPanel.hasRight) {
+        final right = topPanel.right;
+        topPanel.right = null;
+        movingPanel.right = right;
+      }
+      movingPanel.bottom = topPanel;
+
+      movingPanel.height = topPanel.height * 0.5;
+      topPanel.height = heightAbsoluteHalf / heightBottomAbsoluteAfter;
+
+      movingPanel.width = topPanel.width;
+      topPanel.width = -1;
     }
   }
 }

@@ -4,11 +4,11 @@ import 'package:workspace/workspace.dart';
 class WorkspaceInherited extends InheritedWidget {
   const WorkspaceInherited({
     super.key,
-    required this.layout,
+    required this.workspace,
     required super.child,
   });
 
-  final Workspace layout;
+  final Workspace workspace;
 
   static WorkspaceInherited? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<WorkspaceInherited>();
