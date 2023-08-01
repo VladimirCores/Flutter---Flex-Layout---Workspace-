@@ -46,17 +46,11 @@ class _WorkspaceRegionsState extends State<WorkspaceRegions> {
   @override
   void initState() {
     super.initState();
-    final panel = widget.panel;
-    final selected = widget.selectedPanel;
-    final panelSideIndex = panel.findCellSideIndex(selected);
+    final currentPanel = widget.panel;
+    final selectedPanel = widget.selectedPanel;
+    final panelSideIndex = currentPanel.findCellSideIndex(selectedPanel);
     if (panelSideIndex > -1) {
       _connectedCellSide = PanelRegionSide.values[panelSideIndex];
-
-      // final isSelectedCellFromRightAndVertical = _connectedCellSide == CellRegionSide.RIGHT &&
-      //     (panel.hasBottom || selected.hasBottom) &&
-      //     panel.hasRight &&
-      //     panel.right == widget.selectedCell;
-
       allowedSides[panelSideIndex] = false;
       print('> LayoutRegions -> initState - Cell position: ${panelSideIndex} | $_connectedCellSide');
     }
@@ -65,6 +59,9 @@ class _WorkspaceRegionsState extends State<WorkspaceRegions> {
       allowedSides[PanelRegionSide.TOP.index] = false;
       allowedSides[PanelRegionSide.RIGHT.index] = !widget.panel.hasRight;
       allowedSides[PanelRegionSide.BOTTOM.index] = !widget.panel.hasBottom;
+    } else {
+      final hasTwoRowsConnection = currentPanel.hasBottom && currentPanel.hasRight;
+      allowedSides[PanelRegionSide.RIGHT.index] = !hasTwoRowsConnection && currentPanel.right != selectedPanel;
     }
     print('> LayoutRegions -> initState - allowedSides: ${allowedSides}');
   }
