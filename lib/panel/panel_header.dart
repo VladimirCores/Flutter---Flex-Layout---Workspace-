@@ -24,6 +24,20 @@ class _PanelHeaderState extends State<PanelHeader> {
   bool isCloseButtonHover = false;
   bool isSelected = false;
 
+  void _onPointerDown(_) {
+    setState(() {
+      isSelected = true;
+      widget.onPointerDown();
+    });
+  }
+
+  void _onPointerUp(_) {
+    setState(() {
+      isSelected = false;
+      widget.onPointerUp();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     var color = Colors.transparent;
@@ -40,49 +54,37 @@ class _PanelHeaderState extends State<PanelHeader> {
           width: double.maxFinite,
           color: isSelected ? Colors.lightGreen : Colors.white,
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                if (!canInteract)
-                  Text(widget.title)
-                else
-                  Listener(
-                    onPointerDown: (_) => setState(() {
-                      isSelected = true;
-                      widget.onPointerDown();
-                    }),
-                    onPointerUp: (_) => setState(() {
-                      isSelected = false;
-                      widget.onPointerUp();
-                    }),
-                    child: Row(children: [
-                      Text(widget.title),
-                      const SizedBox(width: 4),
-                      StatefulBuilder(
-                        builder: (_, setState) {
-                          return InkWell(
-                            onHover: (_) {
-                              setState(() {
-                                isCloseButtonHover = !isCloseButtonHover;
-                              });
-                            },
-                            onTap: widget.onRemove,
-                            child: Icon(
-                              Icons.close,
-                              weight: 700,
-                              size: 16.0,
-                              color: isCloseButtonHover ? Colors.black87 : Colors.black26,
-                            ),
-                          );
-                        },
-                      ),
-                    ]),
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+            child: !canInteract
+                ? Text(widget.title)
+                : Listener(
+                    onPointerDown: _onPointerDown,
+                    onPointerUp: _onPointerUp,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(widget.title),
+                        StatefulBuilder(
+                          builder: (_, setState) {
+                            return InkWell(
+                              onHover: (_) {
+                                setState(() {
+                                  isCloseButtonHover = !isCloseButtonHover;
+                                });
+                              },
+                              onTap: widget.onRemove,
+                              child: Icon(
+                                Icons.close,
+                                weight: 700,
+                                size: 16.0,
+                                color: isCloseButtonHover ? Colors.black87 : Colors.black26,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-              ],
-            ),
           ),
         ),
       ),

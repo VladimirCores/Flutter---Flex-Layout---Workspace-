@@ -6,21 +6,19 @@ import 'package:workspace/panel/panel_header.dart';
 import 'package:workspace/panel/panel_params.dart';
 import 'package:workspace/regions.dart';
 
+const double HANDLER_SIZE = 4;
+
 class Workspace {
   Workspace();
 
-  int xCount = 0;
-  int yCount = 0;
-
   final ValueNotifier<List<WorkspacePanel>> _items = ValueNotifier([]);
-
   final ValueNotifier<WorkspacePanel?> selectedPanel = ValueNotifier(null);
-  final ValueNotifier<({WorkspacePanel? panel, PanelRegionSide? side})?> selectedCellRegionSide = ValueNotifier(null);
+  final ValueNotifier<({WorkspacePanel? panel, PanelRegionSide? side})?> panelRegionSide = ValueNotifier(null);
 
   WorkspacePanel get root => _items.value.first;
   ValueNotifier<List<WorkspacePanel>> get panels => _items;
 
-  _breakPrevious(WorkspacePanel panel) {
+  _breakConnectionWithPrevious(WorkspacePanel panel) {
     if (panel.previous?.right == panel) panel.previous!.right = null;
     if (panel.previous?.bottom == panel) panel.previous!.bottom = null;
   }
@@ -32,15 +30,15 @@ class Workspace {
     return panel;
   }
 
-  WorkspacePanel addRight(WorkspacePanel to, WorkspacePanel gc) {
-    _breakPrevious(gc);
-    to.right = gc;
-    gc.previous = to;
-    return add(gc);
+  WorkspacePanel addRight(WorkspacePanel to, WorkspacePanel panel) {
+    _breakConnectionWithPrevious(panel);
+    to.right = panel;
+    panel.previous = to;
+    return add(panel);
   }
 
   WorkspacePanel addBottom(WorkspacePanel to, WorkspacePanel panel) {
-    _breakPrevious(panel);
+    _breakConnectionWithPrevious(panel);
     if (to.hasBottom) {
       if (panel.hasBottom && !panel.isRoot) {
         panel.previous!.bottom = panel.bottom;
@@ -163,7 +161,7 @@ class Workspace {
     }
   }
 
-  void removeCell(WorkspacePanel deletePanel, double handleSize, {keep = false, willBecomeRoot = false}) {
+  void removePanel(WorkspacePanel deletePanel, {keep = false, willBecomeRoot = false}) {
     print('> Layout -> removeCell: keep = ${keep}');
     final previous = deletePanel.previous;
     final hasPrevious = previous != null;
@@ -173,7 +171,7 @@ class Workspace {
       _rearrangeConnectionWithPrevious(
         previous,
         deletePanel,
-        handleSize,
+        HANDLER_SIZE,
         isFromBottom,
       );
       deletePanel.clearConnection();
@@ -189,10 +187,10 @@ class Workspace {
     }
   }
 
-  List<Widget> createNextSideWithHandler(WorkspacePanelParams params) {
+  List<Widget> _createNextSideWithHandler(WorkspacePanelParams params) {
     return [
       Handler(params.handleParams),
-      positionWidgetsFrom(
+      positionPanelsAt(
         params.panel,
         parentWidth: params.parentWidth,
         parentHeight: params.parentHeight,
@@ -200,11 +198,34 @@ class Workspace {
     ];
   }
 
-  Widget positionWidgetsFrom(
+  Widget _buildPanelContent(WorkspacePanel panel) {
+    return Stack(
+      alignment: AlignmentDirectional.center,
+      children: [
+        panel.widgetContent ?? Container(),
+        ValueListenableBuilder(
+          valueListenable: selectedPanel,
+          builder: (_, WorkspacePanel? selected, __) {
+            final hasSelected = selected != null;
+            final isDifferent = selected != panel;
+            // print('> panelContent -> hasSelected: ${hasSelected}');
+            return hasSelected && isDifferent
+                ? WorkspaceRegions(
+                    panel,
+                    selected,
+                    panelRegionSide,
+                  )
+                : Container();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget positionPanelsAt(
     WorkspacePanel panel, {
     required double parentWidth,
     required double parentHeight,
-    double handlerSize = 4,
   }) {
     final hasRight = panel.right != null;
     final hasBottom = panel.bottom != null;
@@ -212,19 +233,14 @@ class Workspace {
     final hasWidth = panel.width > 0;
     final hasHeight = panel.height > 0;
 
-    final double handleSizeX = (hasRight ? handlerSize : 0);
-    final double handleSizeY = (hasBottom ? handlerSize : 0);
+    final double handleSizeX = (hasRight ? HANDLER_SIZE : 0);
+    final double handleSizeY = (hasBottom ? HANDLER_SIZE : 0);
 
     panel.parentWidth = parentWidth;
     panel.parentHeight = parentHeight;
 
     final initialWidth = hasWidth ? panel.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
     final initialHeight = hasHeight ? panel.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
-
-    // print(
-    //     '(${hasHeight ? 'hasHeight(${panel.height})' : 'noHeight'}:${hasWidth ? 'hasWidth(${panel.width})' : 'noWidth'}) '
-    //     // '(${hasBottom ? 'hasBottom' : 'noBottom'}:${hasRight ? 'hasRight' : 'noRight'}) ',
-    //     );
 
     ValueNotifier<double> horizontalResizer = ValueNotifier(initialWidth);
     ValueNotifier<double> verticalResizer = ValueNotifier(initialHeight);
@@ -238,10 +254,7 @@ class Workspace {
       child: ValueListenableBuilder(
         valueListenable: isHorizontal ? verticalResizer : horizontalResizer,
         builder: (_, double blockHeightWidth, __) {
-          final outerSize = blockHeightWidth > handlerSize ? blockHeightWidth : handlerSize;
-
-          // if (isHorizontal && hasBottom) panel.absoluteHeight = outerSize;
-          // if (!isHorizontal && hasRight) panel.absoluteWidth = outerSize;
+          final outerSize = blockHeightWidth > HANDLER_SIZE ? blockHeightWidth : HANDLER_SIZE;
 
           return Flex(
             direction: isHorizontal ? Axis.vertical : Axis.horizontal,
@@ -249,10 +262,7 @@ class Workspace {
               ValueListenableBuilder(
                 valueListenable: isHorizontal ? horizontalResizer : verticalResizer,
                 builder: (_, double blockWidthHeight, __) {
-                  final innerSize = blockWidthHeight > handlerSize ? blockWidthHeight : handlerSize;
-
-                  // if (isHorizontal && hasRight) panel.absoluteWidth = innerSize;
-                  // if (!isHorizontal && hasBottom) panel.absoluteHeight = innerSize;
+                  final innerSize = blockWidthHeight > HANDLER_SIZE ? blockWidthHeight : HANDLER_SIZE;
 
                   panel.absoluteWidth = (isHorizontal ? innerSize : outerSize);
                   panel.absoluteHeight = (isHorizontal ? outerSize : innerSize);
@@ -267,10 +277,21 @@ class Workspace {
                       SizedBox(
                         width: panel.absoluteWidth,
                         height: panel.absoluteHeight,
-                        child: _buildCellContent(panel, handlerSize),
+                        child: Column(
+                          children: [
+                            PanelHeader(
+                              title: 'Panel',
+                              onPointerDown: () => selectedPanel.value = panel,
+                              onPointerUp: _onHeaderPointerUp,
+                              onRemove: panel.isRoot ? null : () => removePanel(panel),
+                            ),
+                            Expanded(child: _buildPanelContent(panel)),
+                          ],
+                        ),
+                        // child: PanelContent(panel),
                       ),
                       if (isHorizontal ? hasRight : hasBottom)
-                        ...createNextSideWithHandler(isHorizontal
+                        ..._createNextSideWithHandler(isHorizontal
                             ? WorkspacePanelParams(
                                 panel.right!,
                                 parentWidth - (innerSize + handleSizeX),
@@ -288,7 +309,7 @@ class Workspace {
                 },
               ),
               if (hasBottom || hasRight)
-                ...createNextSideWithHandler(isHorizontal
+                ..._createNextSideWithHandler(isHorizontal
                     ? WorkspacePanelParams(
                         panel.bottom!,
                         parentWidth,
@@ -315,196 +336,178 @@ class Workspace {
     PanelRegionSide.LEFT,
   ];
 
-  Widget _buildCellContent(WorkspacePanel panel, double handlerSize) {
-    return Column(
-      children: [
-        PanelHeader(
-          title: 'Cell',
-          onPointerDown: () => selectedPanel.value = panel,
-          onPointerUp: () {
-            final canRearrange = selectedCellRegionSide.value?.side != null && selectedPanel.value != null;
-            print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
-            if (canRearrange) {
-              final panelSide = selectedCellRegionSide.value?.side;
-              final targetPanel = selectedCellRegionSide.value!.panel;
-              final movingPanel = selectedPanel.value!;
-              final panelSideIndex = targetPanel!.findCellSideIndex(selectedPanel.value!);
-              final isMovingCellPrevious = movingPanel == targetPanel.previous;
-              final isTargetRoot = targetPanel.previous == null;
+  _onHeaderPointerUp() {
+    final canRearrange = panelRegionSide.value?.side != null && selectedPanel.value != null;
+    print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
+    if (canRearrange) {
+      final targetPanelSide = panelRegionSide.value?.side;
+      final targetPanel = panelRegionSide.value!.panel!;
+      final movingPanel = selectedPanel.value!;
 
-              print('> \t panel side: ${panelSide}');
-              print('> \t panel index: ${panelSideIndex}');
+      print('> \t panel side: ${targetPanelSide}');
 
-              final isMovingCellBecomeRoot = isTargetRoot && panelSide == PanelRegionSide.LEFT;
+      if (REMOVABLE_SIDES.contains(targetPanelSide)) {
+        final isTargetSideCanBeRoot = [PanelRegionSide.LEFT, PanelRegionSide.TOP].contains(targetPanelSide);
+        final isMovingCellBecomeRoot = targetPanel.isRoot && isTargetSideCanBeRoot;
+        removePanel(movingPanel, keep: true, willBecomeRoot: isMovingCellBecomeRoot);
+      }
 
-              if (REMOVABLE_SIDES.contains(panelSide)) {
-                removeCell(movingPanel, handlerSize, keep: true, willBecomeRoot: isMovingCellBecomeRoot);
-              }
+      switch (targetPanelSide) {
+        case PanelRegionSide.TOP:
+          _positionPanelTop(targetPanel, movingPanel);
+          break;
+        case PanelRegionSide.BOTTOM:
+          _positionPanelBottom(targetPanel, movingPanel);
+          break;
+        case PanelRegionSide.RIGHT:
+          _positionPanelRight(targetPanel, movingPanel);
+          break;
+        case PanelRegionSide.LEFT:
+          _positionPanelLeft(targetPanel, movingPanel);
+          break;
+        case PanelRegionSide.CENTER:
+        case null:
+      }
+    }
+    selectedPanel.value = null;
+    panelRegionSide.value = null;
+  }
 
-              final isTargetHorizontal = targetPanel.isHorizontal;
-              final isTargetWithSideConnections = targetPanel.hasRight || targetPanel.hasBottom;
+  void _positionPanelLeft(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
+    final isTargetRoot = targetPanel.isRoot;
+    final isTargetHorizontal = targetPanel.isHorizontal;
+    print('> LEFT: isTargetRoot = ${isTargetRoot}');
+    print('> \t\t isTargetHorizontal = ${isTargetHorizontal}');
+    print('> \t\t movingCell.previous = ${movingPanel.previous}');
+    if (isTargetRoot) {
+      final bottom = targetPanel.bottom;
+      targetPanel.bottom = null;
+      if (isTargetHorizontal) {
+        movingPanel.bottom = bottom;
+        movingPanel.right = targetPanel;
+      } else {
+        movingPanel.right = targetPanel;
+        movingPanel.bottom = bottom;
+      }
+      movingPanel.absoluteWidth = targetPanel.absoluteWidth;
+      movingPanel.width = targetPanel.width = targetPanel.width * 0.5;
+      movingPanel.height = targetPanel.height;
+    } else {
+      final targetAbsoluteWidth = targetPanel.absoluteWidth;
+      final rightWidth = 1 / targetPanel.width - 1;
+      final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
+      final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
+      final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
 
-              final isTargetOnBottom = !isTargetRoot && targetPanel.previous!.bottom == targetPanel;
-              final isTargetOnRight = !isTargetRoot && targetPanel.previous!.right == targetPanel;
+      targetPanel.absoluteWidth = movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
+      movingPanel.width *= 0.5;
 
-              switch (panelSide) {
-                case PanelRegionSide.TOP:
-                  if (isTargetRoot) {
-                  } else {
-                    if (isTargetOnBottom) {
-                      targetPanel.previous!.bottom = movingPanel;
-                    } else if (isTargetOnRight) {
-                      targetPanel.previous!.right = movingPanel;
-                    }
-                    if (isTargetWithSideConnections) {
-                      final right = targetPanel.right;
-                      targetPanel.right = null;
-                      if (isTargetHorizontal) {
-                        movingPanel.bottom = targetPanel;
-                        movingPanel.right = right;
-                      } else {
-                        movingPanel.right = right;
-                        movingPanel.bottom = targetPanel;
-                      }
-                      movingPanel.right?.previous = movingPanel;
-                    } else {
-                      movingPanel.bottom = targetPanel;
-                    }
+      if (targetPanel.hasRight) {
+        targetPanel.width = (targetAbsoluteWidthAfterMove - HANDLER_SIZE) / rightAbsoluteWidthAfterMove;
+      } else {
+        movingPanel.width = targetPanel.width = -1;
+      }
 
-                    movingPanel.width = targetPanel.width;
-                    movingPanel.height = -1;
-                    targetPanel.width = -1;
-                  }
-                  break;
-                case PanelRegionSide.BOTTOM:
-                  final targetAbsoluteHeight = targetPanel.absoluteHeight;
-                  final bottomHeight = 1 / targetPanel.height - 1;
-                  final bottomAbsoluteHeight = bottomHeight * targetAbsoluteHeight;
-                  final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5;
-                  final bottomAbsoluteHeightAfterMove = bottomAbsoluteHeight + targetAbsoluteHeightAfterMove;
+      final isTargetOnBottom = targetPanel.previous!.bottom == targetPanel;
+      final isTargetOnRight = targetPanel.previous!.right == targetPanel;
 
-                  movingPanel.bottom = targetPanel.bottom;
-                  targetPanel.bottom = movingPanel;
+      print('> \t isTargetOnBottom = ${isTargetOnBottom}');
+      print('> \t isTargetOnRight = ${isTargetOnRight}');
+      // if (isMovingCellPrevious) {
+      //   if (targetPanel.previous!.right == targetPanel) {
+      //     targetPanel.previous!.right = movingPanel;
+      //   } else if (targetPanel.previous!.bottom == targetPanel) {
+      //     targetPanel.previous!.bottom = movingPanel;
+      //   }
+      // } else {
+      if (isTargetOnBottom) {
+        targetPanel.previous!.bottom = movingPanel;
+      } else if (isTargetOnRight) {
+        targetPanel.previous!.right = movingPanel;
+      }
+      // }
+      movingPanel.right = targetPanel;
+    }
+  }
 
-                  print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
-                  targetPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
-                  movingPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
-                  targetPanel.height *= 0.5;
-                  movingPanel.height = (targetPanel.absoluteHeight - handlerSize) / bottomAbsoluteHeightAfterMove;
-                  movingPanel.width = -1;
-                case PanelRegionSide.RIGHT:
-                  print('> RIGHT');
-                  final targetAbsoluteWidth = targetPanel.absoluteWidth;
-                  final rightWidth = 1 / targetPanel.width - 1;
-                  final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
-                  final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
-                  final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
+  void _positionPanelRight(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
+    print('> RIGHT');
+    final targetAbsoluteWidth = targetPanel.absoluteWidth;
+    final rightWidth = 1 / targetPanel.width - 1;
+    final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
+    final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
+    final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
 
-                  print('> \t targetCell.isHorizontal: ${targetPanel.isHorizontal}');
-                  print('> \t targetCell.hasRight: ${targetPanel.hasRight}');
+    print('> \t targetCell.isHorizontal: ${targetPanel.isHorizontal}');
+    print('> \t targetCell.hasRight: ${targetPanel.hasRight}');
 
-                  movingPanel.right = targetPanel.right;
-                  targetPanel.right = movingPanel;
+    movingPanel.right = targetPanel.right;
+    targetPanel.right = movingPanel;
 
-                  // if (targetCell.hasBottom) {
-                  //   targetCell.switchOrientation();
-                  //   if (movingCell.hasRight && movingCell.isHorizontal) {
-                  //     movingCell.switchOrientation();
-                  //   }
-                  // }
+    // if (targetCell.hasBottom) {
+    //   targetCell.switchOrientation();
+    //   if (movingCell.hasRight && movingCell.isHorizontal) {
+    //     movingCell.switchOrientation();
+    //   }
+    // }
 
-                  targetPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
-                  movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
-                  targetPanel.width *= 0.5;
-                  if (movingPanel.hasRight) {
-                    movingPanel.width = (targetPanel.absoluteWidth - handlerSize) / rightAbsoluteWidthAfterMove;
-                  } else {
-                    movingPanel.width = -1;
-                  }
-                  movingPanel.height = -1;
-                case PanelRegionSide.LEFT:
-                  print('> LEFT: isTargetRoot = ${isTargetRoot}');
-                  print('> \t\t isTargetHorizontal = ${isTargetHorizontal}');
-                  print('> \t\t movingCell.previous = ${movingPanel.previous}');
-                  if (isTargetRoot) {
-                    final bottom = targetPanel.bottom;
-                    targetPanel.bottom = null;
-                    if (isTargetHorizontal) {
-                      movingPanel.bottom = bottom;
-                      movingPanel.right = targetPanel;
-                    } else {
-                      movingPanel.right = targetPanel;
-                      movingPanel.bottom = bottom;
-                    }
-                    movingPanel.absoluteWidth = targetPanel.absoluteWidth;
-                    movingPanel.width = targetPanel.width = targetPanel.width * 0.5;
-                    movingPanel.height = targetPanel.height;
-                  } else {
-                    final targetAbsoluteWidth = targetPanel.absoluteWidth;
-                    final rightWidth = 1 / targetPanel.width - 1;
-                    final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
-                    final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
-                    final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
+    targetPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
+    movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
+    targetPanel.width *= 0.5;
+    if (movingPanel.hasRight) {
+      movingPanel.width = (targetPanel.absoluteWidth - HANDLER_SIZE) / rightAbsoluteWidthAfterMove;
+    } else {
+      movingPanel.width = -1;
+    }
+    movingPanel.height = -1;
+  }
 
-                    targetPanel.absoluteWidth = movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
-                    movingPanel.width *= 0.5;
+  void _positionPanelBottom(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
+    final targetAbsoluteHeight = targetPanel.absoluteHeight;
+    final bottomHeight = 1 / targetPanel.height - 1;
+    final bottomAbsoluteHeight = bottomHeight * targetAbsoluteHeight;
+    final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5;
+    final bottomAbsoluteHeightAfterMove = bottomAbsoluteHeight + targetAbsoluteHeightAfterMove;
 
-                    if (targetPanel.hasRight) {
-                      targetPanel.width = (targetAbsoluteWidthAfterMove - handlerSize) / rightAbsoluteWidthAfterMove;
-                    } else {
-                      movingPanel.width = targetPanel.width = -1;
-                    }
-                    print('> \t isTargetOnBottom = ${isTargetOnBottom}');
-                    print('> \t isTargetOnRight = ${isTargetOnRight}');
-                    if (!isMovingCellPrevious) {
-                      if (isTargetOnBottom) {
-                        targetPanel.previous!.bottom = movingPanel;
-                      } else if (isTargetOnRight) {
-                        targetPanel.previous!.right = movingPanel;
-                      }
-                    } else {
-                      if (targetPanel.previous!.right == targetPanel) {
-                        targetPanel.previous!.right = movingPanel;
-                      } else if (targetPanel.previous!.bottom == targetPanel) {
-                        targetPanel.previous!.bottom = movingPanel;
-                      }
-                    }
-                    movingPanel.right = targetPanel;
-                  }
-                  break;
-                case PanelRegionSide.CENTER:
-                case null:
-              }
-            }
-            selectedPanel.value = null;
-            selectedCellRegionSide.value = null;
-          },
-          onRemove: !panel.isRoot ? () => removeCell(panel, handlerSize) : null,
-        ),
-        Expanded(
-          child: Stack(
-            alignment: AlignmentDirectional.center,
-            children: [
-              panel.widget ?? Container(),
-              ValueListenableBuilder(
-                valueListenable: selectedPanel,
-                builder: (_, WorkspacePanel? selected, __) {
-                  final hasSelected = selected != null;
-                  final isDifferent = selected != panel;
-                  // print('> panelContent -> hasSelected: ${hasSelected}');
-                  return hasSelected && isDifferent
-                      ? WorkspaceRegions(
-                          panel,
-                          selected,
-                          selectedCellRegionSide,
-                        )
-                      : Container();
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    movingPanel.bottom = targetPanel.bottom;
+    targetPanel.bottom = movingPanel;
+
+    print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
+    targetPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
+    movingPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
+    targetPanel.height *= 0.5;
+    movingPanel.height = (targetPanel.absoluteHeight - HANDLER_SIZE) / bottomAbsoluteHeightAfterMove;
+    movingPanel.width = -1;
+  }
+
+  void _positionPanelTop(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
+    final isTargetOnBottom = targetPanel.previous!.bottom == targetPanel;
+    final isTargetOnRight = targetPanel.previous!.right == targetPanel;
+    if (targetPanel.isRoot) {
+    } else {
+      if (isTargetOnBottom) {
+        targetPanel.previous!.bottom = movingPanel;
+      } else if (isTargetOnRight) {
+        targetPanel.previous!.right = movingPanel;
+      }
+      if (targetPanel.hasRight || targetPanel.hasBottom) {
+        final right = targetPanel.right;
+        targetPanel.right = null;
+        if (targetPanel.isHorizontal) {
+          movingPanel.bottom = targetPanel;
+          movingPanel.right = right;
+        } else {
+          movingPanel.right = right;
+          movingPanel.bottom = targetPanel;
+        }
+        movingPanel.right?.previous = movingPanel;
+      } else {
+        movingPanel.bottom = targetPanel;
+      }
+
+      movingPanel.width = targetPanel.width;
+      movingPanel.height = -1;
+      targetPanel.width = -1;
+    }
   }
 }

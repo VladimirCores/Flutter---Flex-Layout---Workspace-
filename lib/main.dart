@@ -10,7 +10,7 @@ void main() {
 class WorkspaceApp extends StatelessWidget {
   WorkspaceApp({super.key}) {
     // generateCell() => LayoutCell(colorCode: rndColorCode());
-    generateCell([String title = '']) => WorkspacePanel(widget: Text(title));
+    generateCell([String title = '']) => WorkspacePanel(widgetContent: Text(title));
     final c0 = generateCell('0');
     final c1 = generateCell('1');
     final c2 = generateCell('2');
@@ -65,7 +65,7 @@ class WorkspaceApp extends StatelessWidget {
               return ValueListenableBuilder(
                 valueListenable: workspace.panels,
                 builder: (_, List<WorkspacePanel> value, __) {
-                  return workspace.positionWidgetsFrom(
+                  return workspace.positionPanelsAt(
                     workspace.root,
                     parentWidth: constraints.maxWidth,
                     parentHeight: constraints.maxHeight,

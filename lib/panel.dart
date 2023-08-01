@@ -6,7 +6,7 @@ class WorkspacePanel {
   WorkspacePanel({
     this.width = -1,
     this.height = -1,
-    this.widget,
+    this.widgetContent,
     randomColor = true,
   }) {
     if (randomColor) {
@@ -27,7 +27,8 @@ class WorkspacePanel {
   double height;
   Color? colorCode;
 
-  Widget? widget;
+  Widget? widgetContent;
+  Widget? widgetHeader;
   final order = <WorkspacePanel>[];
 
   int findCellSideIndex(WorkspacePanel panel) {
