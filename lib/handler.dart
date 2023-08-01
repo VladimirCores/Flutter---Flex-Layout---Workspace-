@@ -7,7 +7,7 @@ class Handler extends StatefulWidget {
     super.key,
   });
 
-  final LayoutHandleParams params;
+  final WorkspaceHandleParams params;
 
   @override
   State<Handler> createState() => _HandlerState();

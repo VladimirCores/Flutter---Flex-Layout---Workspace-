@@ -1,1 +1,1 @@
-enum CellRegionSide { TOP, RIGHT, BOTTOM, LEFT, CENTER }
+enum PanelRegionSide { TOP, RIGHT, BOTTOM, LEFT, CENTER }

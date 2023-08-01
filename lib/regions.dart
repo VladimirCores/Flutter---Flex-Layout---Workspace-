@@ -1,41 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:workspace/cell/layout_cell.dart';
 import 'package:workspace/consts/enums.dart';
+import 'package:workspace/panel.dart';
 
 const FULL_HEIGHT_SIDES = [
-  CellRegionSide.RIGHT,
-  CellRegionSide.LEFT,
-  CellRegionSide.CENTER,
+  PanelRegionSide.RIGHT,
+  PanelRegionSide.LEFT,
+  PanelRegionSide.CENTER,
 ];
 
-class LayoutRegions extends StatefulWidget {
-  const LayoutRegions(
-    this.cell,
-    this.selectedCell,
+class WorkspaceRegions extends StatefulWidget {
+  const WorkspaceRegions(
+    this.panel,
+    this.selectedPanel,
     this.selectedCellRegionSide, {
     super.key,
   });
 
-  final LayoutCell cell;
-  final LayoutCell selectedCell;
-  final ValueNotifier<({LayoutCell? cell, CellRegionSide? side})?> selectedCellRegionSide;
+  final WorkspacePanel panel;
+  final WorkspacePanel selectedPanel;
+  final ValueNotifier<({WorkspacePanel? panel, PanelRegionSide? side})?> selectedCellRegionSide;
 
   @override
-  State<LayoutRegions> createState() => _LayoutRegionsState();
+  State<WorkspaceRegions> createState() => _WorkspaceRegionsState();
 }
 
-class _LayoutRegionsState extends State<LayoutRegions> {
-  final ValueNotifier<CellRegionSide?> _side = ValueNotifier(null);
-  CellRegionSide? _connectedCellSide;
+class _WorkspaceRegionsState extends State<WorkspaceRegions> {
+  final ValueNotifier<PanelRegionSide?> _side = ValueNotifier(null);
+  PanelRegionSide? _connectedCellSide;
   Size? _size;
 
   List<bool> allowedSides = [true, true, true, true];
 
-  void onInside(Size size, CellRegionSide? side) {
+  void onInside(Size size, PanelRegionSide? side) {
     print('> LayoutRegions -> onInside: ${side} | ${size}');
     _size = size;
     _side.value = side;
-    widget.selectedCellRegionSide.value = (cell: widget.cell, side: side);
+    widget.selectedCellRegionSide.value = (panel: widget.panel, side: side);
   }
 
   @override
@@ -46,25 +46,25 @@ class _LayoutRegionsState extends State<LayoutRegions> {
   @override
   void initState() {
     super.initState();
-    final cell = widget.cell;
-    final selected = widget.selectedCell;
-    final cellSideIndex = cell.findCellSideIndex(selected);
-    if (cellSideIndex > -1) {
-      _connectedCellSide = CellRegionSide.values[cellSideIndex];
+    final panel = widget.panel;
+    final selected = widget.selectedPanel;
+    final panelSideIndex = panel.findCellSideIndex(selected);
+    if (panelSideIndex > -1) {
+      _connectedCellSide = PanelRegionSide.values[panelSideIndex];
 
       // final isSelectedCellFromRightAndVertical = _connectedCellSide == CellRegionSide.RIGHT &&
-      //     (cell.hasBottom || selected.hasBottom) &&
-      //     cell.hasRight &&
-      //     cell.right == widget.selectedCell;
+      //     (panel.hasBottom || selected.hasBottom) &&
+      //     panel.hasRight &&
+      //     panel.right == widget.selectedCell;
 
-      allowedSides[cellSideIndex] = false;
-      print('> LayoutRegions -> initState - Cell position: ${cellSideIndex} | $_connectedCellSide');
+      allowedSides[panelSideIndex] = false;
+      print('> LayoutRegions -> initState - Cell position: ${panelSideIndex} | $_connectedCellSide');
     }
-    if (widget.cell.isRoot) {
-      allowedSides[CellRegionSide.LEFT.index] = false;
-      allowedSides[CellRegionSide.TOP.index] = false;
-      allowedSides[CellRegionSide.RIGHT.index] = !widget.cell.hasRight;
-      allowedSides[CellRegionSide.BOTTOM.index] = !widget.cell.hasBottom;
+    if (widget.panel.isRoot) {
+      allowedSides[PanelRegionSide.LEFT.index] = false;
+      allowedSides[PanelRegionSide.TOP.index] = false;
+      allowedSides[PanelRegionSide.RIGHT.index] = !widget.panel.hasRight;
+      allowedSides[PanelRegionSide.BOTTOM.index] = !widget.panel.hasBottom;
     }
     print('> LayoutRegions -> initState - allowedSides: ${allowedSides}');
   }
@@ -79,10 +79,10 @@ class _LayoutRegionsState extends State<LayoutRegions> {
             final skipHighlight = side == null;
             if (skipHighlight) return Container();
             final currentSize = (context.findRenderObject() as RenderBox).size;
-            double? top = CellRegionSide.BOTTOM != side ? 0 : currentSize.height - _size!.height;
-            double? left = CellRegionSide.RIGHT != side ? 0 : currentSize.width - _size!.width;
+            double? top = PanelRegionSide.BOTTOM != side ? 0 : currentSize.height - _size!.height;
+            double? left = PanelRegionSide.RIGHT != side ? 0 : currentSize.width - _size!.width;
             final isFullCellHeight = FULL_HEIGHT_SIDES.contains(side);
-            final isSideCenter = CellRegionSide.CENTER == side;
+            final isSideCenter = PanelRegionSide.CENTER == side;
             return Positioned(
               top: top,
               left: left,
@@ -104,22 +104,22 @@ class _LayoutRegionsState extends State<LayoutRegions> {
 class CellRegions extends StatelessWidget {
   const CellRegions(this.onInside, this.allowedSides, {Key? key}) : super(key: key);
 
-  final Function(Size, CellRegionSide?) onInside;
+  final Function(Size, PanelRegionSide?) onInside;
   final List<bool> allowedSides;
 
   @override
   Widget build(BuildContext context) {
-    final hasTop = allowedSides[CellRegionSide.TOP.index];
-    final hasRight = allowedSides[CellRegionSide.RIGHT.index];
-    final hasBottom = allowedSides[CellRegionSide.BOTTOM.index];
-    final hasLeft = allowedSides[CellRegionSide.LEFT.index];
+    final hasTop = allowedSides[PanelRegionSide.TOP.index];
+    final hasRight = allowedSides[PanelRegionSide.RIGHT.index];
+    final hasBottom = allowedSides[PanelRegionSide.BOTTOM.index];
+    final hasLeft = allowedSides[PanelRegionSide.LEFT.index];
     final verticalFlex = 2 + (hasTop ? 0 : 1) + (hasBottom ? 0 : 1);
     final horizontalFlex = 2 + (hasLeft ? 0 : 1) + (hasRight ? 0 : 1);
     return Column(
       children: [
         if (hasTop)
-          LayoutCellRegion(
-            CellRegionSide.TOP,
+          WorkspacePanelRegion(
+            PanelRegionSide.TOP,
             onInside: onInside,
           ),
         Expanded(
@@ -127,26 +127,26 @@ class CellRegions extends StatelessWidget {
           child: Row(
             children: [
               if (hasLeft)
-                LayoutCellRegion(
-                  CellRegionSide.LEFT,
+                WorkspacePanelRegion(
+                  PanelRegionSide.LEFT,
                   onInside: onInside,
                 ),
-              LayoutCellRegion(
+              WorkspacePanelRegion(
                 flex: horizontalFlex,
-                CellRegionSide.CENTER,
+                PanelRegionSide.CENTER,
                 onInside: onInside,
               ),
               if (hasRight)
-                LayoutCellRegion(
-                  CellRegionSide.RIGHT,
+                WorkspacePanelRegion(
+                  PanelRegionSide.RIGHT,
                   onInside: onInside,
                 ),
             ],
           ),
         ),
         if (hasBottom)
-          LayoutCellRegion(
-            CellRegionSide.BOTTOM,
+          WorkspacePanelRegion(
+            PanelRegionSide.BOTTOM,
             onInside: onInside,
           ),
       ],
@@ -154,8 +154,8 @@ class CellRegions extends StatelessWidget {
   }
 }
 
-class LayoutCellRegion extends StatelessWidget {
-  const LayoutCellRegion(
+class WorkspacePanelRegion extends StatelessWidget {
+  const WorkspacePanelRegion(
     this.side, {
     super.key,
     this.flex = 1,
@@ -163,8 +163,8 @@ class LayoutCellRegion extends StatelessWidget {
   });
 
   final int flex;
-  final CellRegionSide side;
-  final Function(Size, CellRegionSide?) onInside;
+  final PanelRegionSide side;
+  final Function(Size, PanelRegionSide?) onInside;
 
   void _onInside(BuildContext context, bool isEnter) {
     onInside((context.findRenderObject() as RenderBox).size, isEnter ? side : null);

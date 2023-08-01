@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-class LayoutCell {
-  LayoutCell({
+class WorkspacePanel {
+  WorkspacePanel({
     this.width = -1,
     this.height = -1,
     this.widget,
@@ -28,32 +28,32 @@ class LayoutCell {
   Color? colorCode;
 
   Widget? widget;
-  final order = <LayoutCell>[];
+  final order = <WorkspacePanel>[];
 
-  int findCellSideIndex(LayoutCell cell) {
-    if (cell.bottom == this) return 0; // top
-    if (cell == _right) return 1; // right
-    if (cell == _bottom) return 2; // bottom
-    if (cell.right == this) return 3; // left
+  int findCellSideIndex(WorkspacePanel panel) {
+    if (panel.bottom == this) return 0; // top
+    if (panel == _right) return 1; // right
+    if (panel == _bottom) return 2; // bottom
+    if (panel.right == this) return 3; // left
     return -1;
   }
 
-  LayoutCell findMostRight() {
-    LayoutCell? cellRight = this;
-    var result = cellRight;
-    while (cellRight != null) {
-      result = cellRight;
-      cellRight = cellRight.right;
+  WorkspacePanel findMostRight() {
+    WorkspacePanel? panelRight = this;
+    var result = panelRight;
+    while (panelRight != null) {
+      result = panelRight;
+      panelRight = panelRight.right;
     }
     return result;
   }
 
-  LayoutCell findMostBottom() {
-    LayoutCell? cellBottom = this;
-    var result = cellBottom;
-    while (cellBottom != null) {
-      result = cellBottom;
-      cellBottom = cellBottom.bottom;
+  WorkspacePanel findMostBottom() {
+    WorkspacePanel? panelBottom = this;
+    var result = panelBottom;
+    while (panelBottom != null) {
+      result = panelBottom;
+      panelBottom = panelBottom.bottom;
     }
     return result;
   }
@@ -77,7 +77,7 @@ class LayoutCell {
     previous = null;
   }
 
-  void _appendInstead(LayoutCell? value, LayoutCell? current) {
+  void _appendInstead(WorkspacePanel? value, WorkspacePanel? current) {
     final hasCurrent = current != null;
     final isCurrentFirst = hasCurrent && current == order.first;
     // print('> LayoutCell -> appendInstead: isCurrentFirst = ${isCurrentFirst}');
@@ -94,8 +94,8 @@ class LayoutCell {
   bool get isRoot => previous == null;
   bool get isHorizontal => hasBottom && bottom == order.first;
 
-  LayoutCell? _right;
-  set right(LayoutCell? value) {
+  WorkspacePanel? _right;
+  set right(WorkspacePanel? value) {
     // print('> LayoutCell -> change right: had|has value = ${hadValue}|${hasValue}');
     _appendInstead(value, _right);
     // _reconnectWithSide(value, _right);
@@ -110,10 +110,10 @@ class LayoutCell {
     _right = value;
   }
 
-  void _reconnectWithSide(LayoutCell? cell, LayoutCell? side) {
-    final hasValue = cell != null;
+  void _reconnectWithSide(WorkspacePanel? panel, WorkspacePanel? side) {
+    final hasValue = panel != null;
     if (hasValue) {
-      cell.previous = this;
+      panel.previous = this;
     } else {
       if (side != null) {
         side.previous = null;
@@ -121,10 +121,10 @@ class LayoutCell {
     }
   }
 
-  LayoutCell? get right => _right;
+  WorkspacePanel? get right => _right;
 
-  LayoutCell? _bottom;
-  set bottom(LayoutCell? value) {
+  WorkspacePanel? _bottom;
+  set bottom(WorkspacePanel? value) {
     _appendInstead(value, _bottom);
     // _reconnectWithSide(value, _bottom);
     final hasValue = value != null;
@@ -138,7 +138,7 @@ class LayoutCell {
     _bottom = value;
   }
 
-  LayoutCell? get bottom => _bottom;
+  WorkspacePanel? get bottom => _bottom;
 
-  LayoutCell? previous;
+  WorkspacePanel? previous;
 }

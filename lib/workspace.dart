@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:workspace/cell/cell_header.dart';
-import 'package:workspace/cell/layout_cell.dart';
 import 'package:workspace/consts/enums.dart';
 import 'package:workspace/handler.dart';
+import 'package:workspace/panel.dart';
+import 'package:workspace/panel/panel_header.dart';
 import 'package:workspace/regions.dart';
 
-class LayoutHandleParams {
+class WorkspaceHandleParams {
   final ValueNotifier<double> resizer;
   final double parentSize;
   final double size;
   final bool isHorizontal;
 
-  LayoutHandleParams(this.resizer, this.parentSize, this.size, this.isHorizontal);
+  WorkspaceHandleParams(this.resizer, this.parentSize, this.size, this.isHorizontal);
 }
 
-class LayoutCellParams {
-  final LayoutCell cell;
+class WorkspacePanelParams {
+  final WorkspacePanel panel;
   final double parentWidth;
   final double parentHeight;
 
-  final LayoutHandleParams handleParams;
+  final WorkspaceHandleParams handleParams;
 
-  LayoutCellParams(
-    this.cell,
+  WorkspacePanelParams(
+    this.panel,
     this.parentWidth,
     this.parentHeight,
     this.handleParams,
@@ -35,49 +35,49 @@ class Workspace {
   int xCount = 0;
   int yCount = 0;
 
-  final ValueNotifier<List<LayoutCell>> _items = ValueNotifier([]);
+  final ValueNotifier<List<WorkspacePanel>> _items = ValueNotifier([]);
 
-  final ValueNotifier<LayoutCell?> selectedCell = ValueNotifier(null);
-  final ValueNotifier<({LayoutCell? cell, CellRegionSide? side})?> selectedCellRegionSide = ValueNotifier(null);
+  final ValueNotifier<WorkspacePanel?> selectedPanel = ValueNotifier(null);
+  final ValueNotifier<({WorkspacePanel? panel, PanelRegionSide? side})?> selectedCellRegionSide = ValueNotifier(null);
 
-  LayoutCell get root => _items.value.first;
-  ValueNotifier<List<LayoutCell>> get cells => _items;
+  WorkspacePanel get root => _items.value.first;
+  ValueNotifier<List<WorkspacePanel>> get panels => _items;
 
-  _breakPrevious(LayoutCell cell) {
-    if (cell.previous?.right == cell) cell.previous!.right = null;
-    if (cell.previous?.bottom == cell) cell.previous!.bottom = null;
+  _breakPrevious(WorkspacePanel panel) {
+    if (panel.previous?.right == panel) panel.previous!.right = null;
+    if (panel.previous?.bottom == panel) panel.previous!.bottom = null;
   }
 
-  LayoutCell add(LayoutCell cell) {
-    if (!_items.value.contains(cell)) {
-      _items.value.add(cell);
+  WorkspacePanel add(WorkspacePanel panel) {
+    if (!_items.value.contains(panel)) {
+      _items.value.add(panel);
     }
-    return cell;
+    return panel;
   }
 
-  LayoutCell addRight(LayoutCell to, LayoutCell gc) {
+  WorkspacePanel addRight(WorkspacePanel to, WorkspacePanel gc) {
     _breakPrevious(gc);
     to.right = gc;
     gc.previous = to;
     return add(gc);
   }
 
-  LayoutCell addBottom(LayoutCell to, LayoutCell cell) {
-    _breakPrevious(cell);
+  WorkspacePanel addBottom(WorkspacePanel to, WorkspacePanel panel) {
+    _breakPrevious(panel);
     if (to.hasBottom) {
-      if (cell.hasBottom && !cell.isRoot) {
-        cell.previous!.bottom = cell.bottom;
+      if (panel.hasBottom && !panel.isRoot) {
+        panel.previous!.bottom = panel.bottom;
       }
-      cell.bottom = to.bottom;
+      panel.bottom = to.bottom;
     }
-    to.bottom = cell;
-    cell.previous = to;
-    return add(cell);
+    to.bottom = panel;
+    panel.previous = to;
+    return add(panel);
   }
 
-  _connectRightToBottomMostRight(LayoutCell cell, LayoutCell cellBottom, double handleSize) {
-    LayoutCell? right = cellBottom;
-    double parentWidth = cell.parentWidth;
+  _connectRightToBottomMostRight(WorkspacePanel panel, WorkspacePanel panelBottom, double handleSize) {
+    WorkspacePanel? right = panelBottom;
+    double parentWidth = panel.parentWidth;
     print('parent width = ${parentWidth}');
     while (right != null) {
       final rightWidthRelative = right.absoluteWidth / parentWidth;
@@ -87,93 +87,93 @@ class Workspace {
       parentWidth -= right.absoluteWidth + handleSize;
       right = right.right;
     }
-    final bottomMostRight = cellBottom.findMostRight();
-    bottomMostRight.right = cell.right;
+    final bottomMostRight = panelBottom.findMostRight();
+    bottomMostRight.right = panel.right;
   }
 
   _rearrangeConnectionWithPrevious(
-    LayoutCell prev,
-    LayoutCell cell,
+    WorkspacePanel prev,
+    WorkspacePanel panel,
     double handleSize, [
     isRemoveFromPreviousBottom = true,
   ]) {
     print('> \t -> rearrange: isRemoveFromPreviousBottom = ${isRemoveFromPreviousBottom}');
-    final hasBottomOnCell = cell.bottom != null;
-    final hasRightOnCell = cell.right != null;
-    final isHorizontal = cell.isHorizontal;
+    final hasBottomOnCell = panel.bottom != null;
+    final hasRightOnCell = panel.right != null;
+    final isHorizontal = panel.isHorizontal;
     print('> \t\t -> isHorizontal: ${isHorizontal}');
     print('> \t\t -> hasBottomOnCell = ${hasBottomOnCell}');
     print('> \t\t -> hasRightOnCell: ${hasRightOnCell}');
     if (hasBottomOnCell) {
-      final cellBottom = cell.bottom!;
+      final panelBottom = panel.bottom!;
       if (isRemoveFromPreviousBottom) {
-        prev.bottom = cellBottom;
-        final shouldConnectRightToBottomRight = hasRightOnCell && cellBottom.hasRight;
+        prev.bottom = panelBottom;
+        final shouldConnectRightToBottomRight = hasRightOnCell && panelBottom.hasRight;
         print('> \t\t\t -> shouldConnectRightToBottomRight: ${shouldConnectRightToBottomRight}');
         if (shouldConnectRightToBottomRight) {
-          _connectRightToBottomMostRight(cell, cellBottom, handleSize);
+          _connectRightToBottomMostRight(panel, panelBottom, handleSize);
         } else {
           if (hasRightOnCell) {
-            print('> \t\t\t -> but cell has');
-            cellBottom.right = cell.right;
-            cellBottom.absoluteWidth = cell.absoluteWidth;
-            cellBottom.width = cell.width;
+            print('> \t\t\t -> but panel has');
+            panelBottom.right = panel.right;
+            panelBottom.absoluteWidth = panel.absoluteWidth;
+            panelBottom.width = panel.width;
           }
         }
       } else {
-        final shouldShiftRightToLeft = cell.isHorizontal && hasRightOnCell;
+        final shouldShiftRightToLeft = panel.isHorizontal && hasRightOnCell;
         print('> \t\t\t -> shouldShiftRightToLeft: ${shouldShiftRightToLeft}');
         if (shouldShiftRightToLeft) {
-          final cellRight = cell.right!;
-          prev.right = cellRight;
-          final shouldConnectBottomToRightBottom = cellRight.bottom != null;
+          final panelRight = panel.right!;
+          prev.right = panelRight;
+          final shouldConnectBottomToRightBottom = panelRight.bottom != null;
           print('> \t\t\t -> shouldConnectBottomToRightBottom: ${shouldConnectBottomToRightBottom}');
           if (shouldConnectBottomToRightBottom) {
-            final rightMostBottom = cellRight.findMostBottom();
-            rightMostBottom.bottom = cellBottom;
+            final rightMostBottom = panelRight.findMostBottom();
+            rightMostBottom.bottom = panelBottom;
           } else {
-            cellRight.bottom = cellBottom;
+            panelRight.bottom = panelBottom;
           }
-          cellRight.height = -1;
+          panelRight.height = -1;
         } else {
-          final shouldConnectRightToBottomRight = hasRightOnCell && cellBottom.hasRight;
+          final shouldConnectRightToBottomRight = hasRightOnCell && panelBottom.hasRight;
           print('> \t\t\t -> shouldConnectRightToBottomRight: ${shouldConnectRightToBottomRight}');
-          print('> \t\t\t -> cell width: ${cell.width}');
-          print('> \t\t\t -> cellBottom width: ${cellBottom.width}');
-          prev.right = cellBottom;
+          print('> \t\t\t -> panel width: ${panel.width}');
+          print('> \t\t\t -> panelBottom width: ${panelBottom.width}');
+          prev.right = panelBottom;
           if (shouldConnectRightToBottomRight) {
-            _connectRightToBottomMostRight(cell, cellBottom, handleSize);
+            _connectRightToBottomMostRight(panel, panelBottom, handleSize);
           } else {
-            print('> \t\t\t -> cell bottom has no right');
+            print('> \t\t\t -> panel bottom has no right');
             if (hasRightOnCell) {
-              print('> \t\t\t -> cellBottom.isHorizontal = ${cellBottom.isHorizontal}');
-              if (cellBottom.isHorizontal) {
-                final tempCellBottomBottom = cellBottom.bottom;
-                cellBottom.bottom = null;
-                cellBottom.right = cell.right;
-                cellBottom.bottom = tempCellBottomBottom;
+              print('> \t\t\t -> panelBottom.isHorizontal = ${panelBottom.isHorizontal}');
+              if (panelBottom.isHorizontal) {
+                final tempCellBottomBottom = panelBottom.bottom;
+                panelBottom.bottom = null;
+                panelBottom.right = panel.right;
+                panelBottom.bottom = tempCellBottomBottom;
               } else {
-                print('> \t\t\t -> but cell has');
-                cellBottom.right = cell.right;
+                print('> \t\t\t -> but panel has');
+                panelBottom.right = panel.right;
               }
-              cellBottom.absoluteWidth = cell.absoluteWidth;
-              cellBottom.width = cell.width;
+              panelBottom.absoluteWidth = panel.absoluteWidth;
+              panelBottom.width = panel.width;
             }
           }
         }
       }
     } else if (hasRightOnCell) {
-      final cellRight = cell.right!;
+      final panelRight = panel.right!;
       print('> \t\t -> remove - right only');
       if (isRemoveFromPreviousBottom) {
         // print('> \t\t\t -> isPreviousHorizontal (before): ${isPreviousHorizontal}');
-        prev.bottom = cellRight;
+        prev.bottom = panelRight;
         // print('> \t\t\t -> isPreviousHorizontal (after): ${prev.isHorizontal}');
       } else {
-        prev.right = cellRight;
+        prev.right = panelRight;
       }
-      cellRight.parentWidth = cell.parentWidth;
-      cellRight.width = cell.width + (cellRight.absoluteWidth + handleSize) / cell.parentWidth;
+      panelRight.parentWidth = panel.parentWidth;
+      panelRight.width = panel.width + (panelRight.absoluteWidth + handleSize) / panel.parentWidth;
     } else {
       print('> \t\t -> remove - no further connections');
       if (isRemoveFromPreviousBottom) {
@@ -186,37 +186,37 @@ class Workspace {
     }
   }
 
-  void removeCell(LayoutCell deleteCell, double handleSize, {keep = false, willBecomeRoot = false}) {
+  void removeCell(WorkspacePanel deletePanel, double handleSize, {keep = false, willBecomeRoot = false}) {
     print('> Layout -> removeCell: keep = ${keep}');
-    final previous = deleteCell.previous;
+    final previous = deletePanel.previous;
     final hasPrevious = previous != null;
     print('> \t -> hasPrevious = ${hasPrevious}');
     if (hasPrevious) {
-      final isFromBottom = previous.bottom == deleteCell;
+      final isFromBottom = previous.bottom == deletePanel;
       _rearrangeConnectionWithPrevious(
         previous,
-        deleteCell,
+        deletePanel,
         handleSize,
         isFromBottom,
       );
-      deleteCell.clearConnection();
+      deletePanel.clearConnection();
     }
     if (keep) {
       if (willBecomeRoot) {
-        _items.value.remove(deleteCell);
-        _items.value.insert(0, deleteCell);
+        _items.value.remove(deletePanel);
+        _items.value.insert(0, deletePanel);
       }
       _items.notifyListeners();
     } else {
-      _items.value = _items.value.where((el) => el != deleteCell).toList();
+      _items.value = _items.value.where((el) => el != deletePanel).toList();
     }
   }
 
-  List<Widget> createNextSideWithHandler(LayoutCellParams params) {
+  List<Widget> createNextSideWithHandler(WorkspacePanelParams params) {
     return [
       Handler(params.handleParams),
       positionWidgetsFrom(
-        params.cell,
+        params.panel,
         parentWidth: params.parentWidth,
         parentHeight: params.parentHeight,
       ),
@@ -224,47 +224,47 @@ class Workspace {
   }
 
   Widget positionWidgetsFrom(
-    LayoutCell cell, {
+    WorkspacePanel panel, {
     required double parentWidth,
     required double parentHeight,
     double handlerSize = 4,
   }) {
-    final hasRight = cell.right != null;
-    final hasBottom = cell.bottom != null;
+    final hasRight = panel.right != null;
+    final hasBottom = panel.bottom != null;
 
-    final hasWidth = cell.width > 0;
-    final hasHeight = cell.height > 0;
+    final hasWidth = panel.width > 0;
+    final hasHeight = panel.height > 0;
 
     final double handleSizeX = (hasRight ? handlerSize : 0);
     final double handleSizeY = (hasBottom ? handlerSize : 0);
 
-    cell.parentWidth = parentWidth;
-    cell.parentHeight = parentHeight;
+    panel.parentWidth = parentWidth;
+    panel.parentHeight = parentHeight;
 
-    final initialWidth = hasWidth ? cell.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
-    final initialHeight = hasHeight ? cell.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
+    final initialWidth = hasWidth ? panel.width * parentWidth : (parentWidth / (hasRight ? 2 : 1) - handleSizeX);
+    final initialHeight = hasHeight ? panel.height * parentHeight : (parentHeight / (hasBottom ? 2 : 1) - handleSizeY);
 
     // print(
-    //     '(${hasHeight ? 'hasHeight(${cell.height})' : 'noHeight'}:${hasWidth ? 'hasWidth(${cell.width})' : 'noWidth'}) '
+    //     '(${hasHeight ? 'hasHeight(${panel.height})' : 'noHeight'}:${hasWidth ? 'hasWidth(${panel.width})' : 'noWidth'}) '
     //     // '(${hasBottom ? 'hasBottom' : 'noBottom'}:${hasRight ? 'hasRight' : 'noRight'}) ',
     //     );
 
     ValueNotifier<double> horizontalResizer = ValueNotifier(initialWidth);
     ValueNotifier<double> verticalResizer = ValueNotifier(initialHeight);
 
-    final isHorizontal = cell.isHorizontal;
+    final isHorizontal = panel.isHorizontal;
 
     return Container(
       width: parentWidth,
       height: parentHeight,
-      color: cell.colorCode,
+      color: panel.colorCode,
       child: ValueListenableBuilder(
         valueListenable: isHorizontal ? verticalResizer : horizontalResizer,
         builder: (_, double blockHeightWidth, __) {
           final outerSize = blockHeightWidth > handlerSize ? blockHeightWidth : handlerSize;
 
-          // if (isHorizontal && hasBottom) cell.absoluteHeight = outerSize;
-          // if (!isHorizontal && hasRight) cell.absoluteWidth = outerSize;
+          // if (isHorizontal && hasBottom) panel.absoluteHeight = outerSize;
+          // if (!isHorizontal && hasRight) panel.absoluteWidth = outerSize;
 
           return Flex(
             direction: isHorizontal ? Axis.vertical : Axis.horizontal,
@@ -274,37 +274,37 @@ class Workspace {
                 builder: (_, double blockWidthHeight, __) {
                   final innerSize = blockWidthHeight > handlerSize ? blockWidthHeight : handlerSize;
 
-                  // if (isHorizontal && hasRight) cell.absoluteWidth = innerSize;
-                  // if (!isHorizontal && hasBottom) cell.absoluteHeight = innerSize;
+                  // if (isHorizontal && hasRight) panel.absoluteWidth = innerSize;
+                  // if (!isHorizontal && hasBottom) panel.absoluteHeight = innerSize;
 
-                  cell.absoluteWidth = (isHorizontal ? innerSize : outerSize);
-                  cell.absoluteHeight = (isHorizontal ? outerSize : innerSize);
+                  panel.absoluteWidth = (isHorizontal ? innerSize : outerSize);
+                  panel.absoluteHeight = (isHorizontal ? outerSize : innerSize);
 
-                  cell.width = cell.absoluteWidth / parentWidth;
-                  cell.height = cell.absoluteHeight / parentHeight;
+                  panel.width = panel.absoluteWidth / parentWidth;
+                  panel.height = panel.absoluteHeight / parentHeight;
 
                   return Flex(
                     direction: isHorizontal ? Axis.horizontal : Axis.vertical,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
-                        width: cell.absoluteWidth,
-                        height: cell.absoluteHeight,
-                        child: _buildCellContent(cell, handlerSize),
+                        width: panel.absoluteWidth,
+                        height: panel.absoluteHeight,
+                        child: _buildCellContent(panel, handlerSize),
                       ),
                       if (isHorizontal ? hasRight : hasBottom)
                         ...createNextSideWithHandler(isHorizontal
-                            ? LayoutCellParams(
-                                cell.right!,
+                            ? WorkspacePanelParams(
+                                panel.right!,
                                 parentWidth - (innerSize + handleSizeX),
                                 outerSize,
-                                LayoutHandleParams(horizontalResizer, outerSize, handleSizeX, false),
+                                WorkspaceHandleParams(horizontalResizer, outerSize, handleSizeX, false),
                               )
-                            : LayoutCellParams(
-                                cell.bottom!,
+                            : WorkspacePanelParams(
+                                panel.bottom!,
                                 outerSize,
                                 parentHeight - (innerSize + handleSizeY),
-                                LayoutHandleParams(verticalResizer, outerSize, handleSizeY, true),
+                                WorkspaceHandleParams(verticalResizer, outerSize, handleSizeY, true),
                               )),
                     ],
                   );
@@ -312,17 +312,17 @@ class Workspace {
               ),
               if (hasBottom || hasRight)
                 ...createNextSideWithHandler(isHorizontal
-                    ? LayoutCellParams(
-                        cell.bottom!,
+                    ? WorkspacePanelParams(
+                        panel.bottom!,
                         parentWidth,
                         parentHeight - (outerSize + handleSizeY),
-                        LayoutHandleParams(verticalResizer, parentWidth, handleSizeY, true),
+                        WorkspaceHandleParams(verticalResizer, parentWidth, handleSizeY, true),
                       )
-                    : LayoutCellParams(
-                        cell.right!,
+                    : WorkspacePanelParams(
+                        panel.right!,
                         parentWidth - (outerSize + handleSizeX),
                         parentHeight,
-                        LayoutHandleParams(horizontalResizer, parentHeight, handleSizeX, false),
+                        WorkspaceHandleParams(horizontalResizer, parentHeight, handleSizeX, false),
                       ))
             ],
           );
@@ -332,102 +332,102 @@ class Workspace {
   }
 
   final REMOVABLE_SIDES = [
-    CellRegionSide.TOP,
-    CellRegionSide.RIGHT,
-    CellRegionSide.BOTTOM,
-    CellRegionSide.LEFT,
+    PanelRegionSide.TOP,
+    PanelRegionSide.RIGHT,
+    PanelRegionSide.BOTTOM,
+    PanelRegionSide.LEFT,
   ];
 
-  Widget _buildCellContent(LayoutCell cell, double handlerSize) {
+  Widget _buildCellContent(WorkspacePanel panel, double handlerSize) {
     return Column(
       children: [
-        CellHeader(
+        PanelHeader(
           title: 'Cell',
-          onPointerDown: () => selectedCell.value = cell,
+          onPointerDown: () => selectedPanel.value = panel,
           onPointerUp: () {
-            final canRearrange = selectedCellRegionSide.value?.side != null && selectedCell.value != null;
+            final canRearrange = selectedCellRegionSide.value?.side != null && selectedPanel.value != null;
             print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
             if (canRearrange) {
-              final cellSide = selectedCellRegionSide.value?.side;
-              final targetCell = selectedCellRegionSide.value!.cell;
-              final movingCell = selectedCell.value!;
-              final cellSideIndex = targetCell!.findCellSideIndex(selectedCell.value!);
-              final isMovingCellPrevious = movingCell == targetCell.previous;
-              final isTargetRoot = targetCell.previous == null;
+              final panelSide = selectedCellRegionSide.value?.side;
+              final targetPanel = selectedCellRegionSide.value!.panel;
+              final movingPanel = selectedPanel.value!;
+              final panelSideIndex = targetPanel!.findCellSideIndex(selectedPanel.value!);
+              final isMovingCellPrevious = movingPanel == targetPanel.previous;
+              final isTargetRoot = targetPanel.previous == null;
 
-              print('> \t cell side: ${cellSide}');
-              print('> \t cell index: ${cellSideIndex}');
+              print('> \t panel side: ${panelSide}');
+              print('> \t panel index: ${panelSideIndex}');
 
-              final isMovingCellBecomeRoot = isTargetRoot && cellSide == CellRegionSide.LEFT;
+              final isMovingCellBecomeRoot = isTargetRoot && panelSide == PanelRegionSide.LEFT;
 
-              if (REMOVABLE_SIDES.contains(cellSide)) {
-                removeCell(movingCell, handlerSize, keep: true, willBecomeRoot: isMovingCellBecomeRoot);
+              if (REMOVABLE_SIDES.contains(panelSide)) {
+                removeCell(movingPanel, handlerSize, keep: true, willBecomeRoot: isMovingCellBecomeRoot);
               }
 
-              final isTargetHorizontal = targetCell.isHorizontal;
-              final isTargetWithSideConnections = targetCell.hasRight || targetCell.hasBottom;
+              final isTargetHorizontal = targetPanel.isHorizontal;
+              final isTargetWithSideConnections = targetPanel.hasRight || targetPanel.hasBottom;
 
-              final isTargetOnBottom = !isTargetRoot && targetCell.previous!.bottom == targetCell;
-              final isTargetOnRight = !isTargetRoot && targetCell.previous!.right == targetCell;
+              final isTargetOnBottom = !isTargetRoot && targetPanel.previous!.bottom == targetPanel;
+              final isTargetOnRight = !isTargetRoot && targetPanel.previous!.right == targetPanel;
 
-              switch (cellSide) {
-                case CellRegionSide.TOP:
+              switch (panelSide) {
+                case PanelRegionSide.TOP:
                   if (isTargetRoot) {
                   } else {
                     if (isTargetOnBottom) {
-                      targetCell.previous!.bottom = movingCell;
+                      targetPanel.previous!.bottom = movingPanel;
                     } else if (isTargetOnRight) {
-                      targetCell.previous!.right = movingCell;
+                      targetPanel.previous!.right = movingPanel;
                     }
                     if (isTargetWithSideConnections) {
-                      final right = targetCell.right;
-                      targetCell.right = null;
+                      final right = targetPanel.right;
+                      targetPanel.right = null;
                       if (isTargetHorizontal) {
-                        movingCell.bottom = targetCell;
-                        movingCell.right = right;
+                        movingPanel.bottom = targetPanel;
+                        movingPanel.right = right;
                       } else {
-                        movingCell.right = right;
-                        movingCell.bottom = targetCell;
+                        movingPanel.right = right;
+                        movingPanel.bottom = targetPanel;
                       }
-                      movingCell.right?.previous = movingCell;
+                      movingPanel.right?.previous = movingPanel;
                     } else {
-                      movingCell.bottom = targetCell;
+                      movingPanel.bottom = targetPanel;
                     }
 
-                    movingCell.width = targetCell.width;
-                    movingCell.height = -1;
-                    targetCell.width = -1;
+                    movingPanel.width = targetPanel.width;
+                    movingPanel.height = -1;
+                    targetPanel.width = -1;
                   }
                   break;
-                case CellRegionSide.BOTTOM:
-                  final targetAbsoluteHeight = targetCell.absoluteHeight;
-                  final bottomHeight = 1 / targetCell.height - 1;
+                case PanelRegionSide.BOTTOM:
+                  final targetAbsoluteHeight = targetPanel.absoluteHeight;
+                  final bottomHeight = 1 / targetPanel.height - 1;
                   final bottomAbsoluteHeight = bottomHeight * targetAbsoluteHeight;
                   final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5;
                   final bottomAbsoluteHeightAfterMove = bottomAbsoluteHeight + targetAbsoluteHeightAfterMove;
 
-                  movingCell.bottom = targetCell.bottom;
-                  targetCell.bottom = movingCell;
+                  movingPanel.bottom = targetPanel.bottom;
+                  targetPanel.bottom = movingPanel;
 
                   print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
-                  targetCell.absoluteHeight = targetAbsoluteHeightAfterMove;
-                  movingCell.absoluteHeight = targetAbsoluteHeightAfterMove;
-                  targetCell.height *= 0.5;
-                  movingCell.height = (targetCell.absoluteHeight - handlerSize) / bottomAbsoluteHeightAfterMove;
-                  movingCell.width = -1;
-                case CellRegionSide.RIGHT:
+                  targetPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
+                  movingPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
+                  targetPanel.height *= 0.5;
+                  movingPanel.height = (targetPanel.absoluteHeight - handlerSize) / bottomAbsoluteHeightAfterMove;
+                  movingPanel.width = -1;
+                case PanelRegionSide.RIGHT:
                   print('> RIGHT');
-                  final targetAbsoluteWidth = targetCell.absoluteWidth;
-                  final rightWidth = 1 / targetCell.width - 1;
+                  final targetAbsoluteWidth = targetPanel.absoluteWidth;
+                  final rightWidth = 1 / targetPanel.width - 1;
                   final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
                   final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
                   final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
 
-                  print('> \t targetCell.isHorizontal: ${targetCell.isHorizontal}');
-                  print('> \t targetCell.hasRight: ${targetCell.hasRight}');
+                  print('> \t targetCell.isHorizontal: ${targetPanel.isHorizontal}');
+                  print('> \t targetCell.hasRight: ${targetPanel.hasRight}');
 
-                  movingCell.right = targetCell.right;
-                  targetCell.right = movingCell;
+                  movingPanel.right = targetPanel.right;
+                  targetPanel.right = movingPanel;
 
                   // if (targetCell.hasBottom) {
                   //   targetCell.switchOrientation();
@@ -436,88 +436,88 @@ class Workspace {
                   //   }
                   // }
 
-                  targetCell.absoluteWidth = targetAbsoluteWidthAfterMove;
-                  movingCell.absoluteWidth = targetAbsoluteWidthAfterMove;
-                  targetCell.width *= 0.5;
-                  if (movingCell.hasRight) {
-                    movingCell.width = (targetCell.absoluteWidth - handlerSize) / rightAbsoluteWidthAfterMove;
+                  targetPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
+                  movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
+                  targetPanel.width *= 0.5;
+                  if (movingPanel.hasRight) {
+                    movingPanel.width = (targetPanel.absoluteWidth - handlerSize) / rightAbsoluteWidthAfterMove;
                   } else {
-                    movingCell.width = -1;
+                    movingPanel.width = -1;
                   }
-                  movingCell.height = -1;
-                case CellRegionSide.LEFT:
+                  movingPanel.height = -1;
+                case PanelRegionSide.LEFT:
                   print('> LEFT: isTargetRoot = ${isTargetRoot}');
                   print('> \t\t isTargetHorizontal = ${isTargetHorizontal}');
-                  print('> \t\t movingCell.previous = ${movingCell.previous}');
+                  print('> \t\t movingCell.previous = ${movingPanel.previous}');
                   if (isTargetRoot) {
-                    final bottom = targetCell.bottom;
-                    targetCell.bottom = null;
+                    final bottom = targetPanel.bottom;
+                    targetPanel.bottom = null;
                     if (isTargetHorizontal) {
-                      movingCell.bottom = bottom;
-                      movingCell.right = targetCell;
+                      movingPanel.bottom = bottom;
+                      movingPanel.right = targetPanel;
                     } else {
-                      movingCell.right = targetCell;
-                      movingCell.bottom = bottom;
+                      movingPanel.right = targetPanel;
+                      movingPanel.bottom = bottom;
                     }
-                    movingCell.absoluteWidth = targetCell.absoluteWidth;
-                    movingCell.width = targetCell.width = targetCell.width * 0.5;
-                    movingCell.height = targetCell.height;
+                    movingPanel.absoluteWidth = targetPanel.absoluteWidth;
+                    movingPanel.width = targetPanel.width = targetPanel.width * 0.5;
+                    movingPanel.height = targetPanel.height;
                   } else {
-                    final targetAbsoluteWidth = targetCell.absoluteWidth;
-                    final rightWidth = 1 / targetCell.width - 1;
+                    final targetAbsoluteWidth = targetPanel.absoluteWidth;
+                    final rightWidth = 1 / targetPanel.width - 1;
                     final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
                     final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
                     final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
 
-                    targetCell.absoluteWidth = movingCell.absoluteWidth = targetAbsoluteWidthAfterMove;
-                    movingCell.width *= 0.5;
+                    targetPanel.absoluteWidth = movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
+                    movingPanel.width *= 0.5;
 
-                    if (targetCell.hasRight) {
-                      targetCell.width = (targetAbsoluteWidthAfterMove - handlerSize) / rightAbsoluteWidthAfterMove;
+                    if (targetPanel.hasRight) {
+                      targetPanel.width = (targetAbsoluteWidthAfterMove - handlerSize) / rightAbsoluteWidthAfterMove;
                     } else {
-                      movingCell.width = targetCell.width = -1;
+                      movingPanel.width = targetPanel.width = -1;
                     }
                     print('> \t isTargetOnBottom = ${isTargetOnBottom}');
                     print('> \t isTargetOnRight = ${isTargetOnRight}');
                     if (!isMovingCellPrevious) {
                       if (isTargetOnBottom) {
-                        targetCell.previous!.bottom = movingCell;
+                        targetPanel.previous!.bottom = movingPanel;
                       } else if (isTargetOnRight) {
-                        targetCell.previous!.right = movingCell;
+                        targetPanel.previous!.right = movingPanel;
                       }
                     } else {
-                      if (targetCell.previous!.right == targetCell) {
-                        targetCell.previous!.right = movingCell;
-                      } else if (targetCell.previous!.bottom == targetCell) {
-                        targetCell.previous!.bottom = movingCell;
+                      if (targetPanel.previous!.right == targetPanel) {
+                        targetPanel.previous!.right = movingPanel;
+                      } else if (targetPanel.previous!.bottom == targetPanel) {
+                        targetPanel.previous!.bottom = movingPanel;
                       }
                     }
-                    movingCell.right = targetCell;
+                    movingPanel.right = targetPanel;
                   }
                   break;
-                case CellRegionSide.CENTER:
+                case PanelRegionSide.CENTER:
                 case null:
               }
             }
-            selectedCell.value = null;
+            selectedPanel.value = null;
             selectedCellRegionSide.value = null;
           },
-          onRemove: !cell.isRoot ? () => removeCell(cell, handlerSize) : null,
+          onRemove: !panel.isRoot ? () => removeCell(panel, handlerSize) : null,
         ),
         Expanded(
           child: Stack(
             alignment: AlignmentDirectional.center,
             children: [
-              cell.widget ?? Container(),
+              panel.widget ?? Container(),
               ValueListenableBuilder(
-                valueListenable: selectedCell,
-                builder: (_, LayoutCell? selected, __) {
+                valueListenable: selectedPanel,
+                builder: (_, WorkspacePanel? selected, __) {
                   final hasSelected = selected != null;
-                  final isDifferent = selected != cell;
-                  // print('> cellContent -> hasSelected: ${hasSelected}');
+                  final isDifferent = selected != panel;
+                  // print('> panelContent -> hasSelected: ${hasSelected}');
                   return hasSelected && isDifferent
-                      ? LayoutRegions(
-                          cell,
+                      ? WorkspaceRegions(
+                          panel,
                           selected,
                           selectedCellRegionSide,
                         )

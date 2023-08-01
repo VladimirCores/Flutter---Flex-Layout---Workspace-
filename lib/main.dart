@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:workspace/cell/layout_cell.dart';
 import 'package:workspace/inherited.dart';
+import 'package:workspace/panel.dart';
 import 'package:workspace/workspace.dart';
 
 void main() {
@@ -10,7 +10,7 @@ void main() {
 class WorkspaceLayout extends StatelessWidget {
   WorkspaceLayout({super.key}) {
     // generateCell() => LayoutCell(colorCode: rndColorCode());
-    generateCell([String title = '']) => LayoutCell(widget: Text(title));
+    generateCell([String title = '']) => WorkspacePanel(widget: Text(title));
     final c0 = generateCell('0');
     final c1 = generateCell('1');
     final c2 = generateCell('2');
@@ -63,8 +63,8 @@ class WorkspaceLayout extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               return ValueListenableBuilder(
-                valueListenable: workspace.cells,
-                builder: (_, List<LayoutCell> value, __) {
+                valueListenable: workspace.panels,
+                builder: (_, List<WorkspacePanel> value, __) {
                   return workspace.positionWidgetsFrom(
                     workspace.root,
                     parentWidth: constraints.maxWidth,

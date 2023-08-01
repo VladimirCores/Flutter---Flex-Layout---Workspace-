@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class CellHeader extends StatefulWidget {
-  const CellHeader({
+class PanelHeader extends StatefulWidget {
+  const PanelHeader({
     super.key,
     this.height = 32,
     required this.title,
@@ -17,10 +17,10 @@ class CellHeader extends StatefulWidget {
   final Function()? onRemove;
 
   @override
-  State<CellHeader> createState() => _CellHeaderState();
+  State<PanelHeader> createState() => _PanelHeaderState();
 }
 
-class _CellHeaderState extends State<CellHeader> {
+class _PanelHeaderState extends State<PanelHeader> {
   bool isCloseButtonHover = false;
   bool isSelected = false;
 
