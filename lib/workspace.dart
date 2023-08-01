@@ -475,8 +475,8 @@ class Workspace {
     print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
     targetPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
     movingPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
-    targetPanel.height *= 0.5;
-    movingPanel.height = (targetPanel.absoluteHeight - HANDLER_SIZE) / bottomAbsoluteHeightAfterMove;
+    targetPanel.height = (targetPanel.height - HANDLER_SIZE / bottomAbsoluteHeightAfterMove) / 2;
+    movingPanel.height = targetPanel.absoluteHeight / bottomAbsoluteHeightAfterMove;
     movingPanel.width = -1;
   }
 
@@ -506,7 +506,7 @@ class Workspace {
       }
 
       movingPanel.width = targetPanel.width;
-      movingPanel.height = -1;
+      movingPanel.height = targetPanel.height = -1;
       targetPanel.width = -1;
     }
   }
