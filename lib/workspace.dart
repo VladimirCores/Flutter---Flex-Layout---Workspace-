@@ -299,7 +299,7 @@ class Workspace {
                                     WorkspaceHandleParams(verticalResizer, panel.absoluteWidth, true),
                                   ),
                             isHorizontal && panel.hasRight,
-                            panel.hasBottom),
+                            !isHorizontal && panel.hasBottom),
                     ],
                   );
                 },
@@ -319,7 +319,7 @@ class Workspace {
                             parentHeight,
                             WorkspaceHandleParams(horizontalResizer, parentHeight, false),
                           ),
-                    panel.hasRight,
+                    !isHorizontal && panel.hasRight,
                     isHorizontal && panel.hasBottom)
             ],
           );
@@ -429,46 +429,31 @@ class Workspace {
     }
   }
 
-  void _positionPanelRight(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
-    print('> RIGHT');
-    final targetAbsoluteWidth = targetPanel.absoluteWidth;
-    final rightWidth = 1 / targetPanel.width - 1;
-    final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
-    final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
-    final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
+  void _positionPanelRight(WorkspacePanel rightPanel, WorkspacePanel movingPanel) {
+    final sizes = divideHalf(rightPanel.absoluteWidth, rightPanel.width, HANDLER_SIZE);
 
-    print('> \t targetCell.isHorizontal: ${targetPanel.isHorizontal}');
-    print('> \t targetCell.hasRight: ${targetPanel.hasRight}');
+    print('> \t targetCell.isHorizontal: ${rightPanel.isHorizontal}');
+    print('> \t targetCell.hasRight: ${rightPanel.hasRight}');
 
-    movingPanel.right = targetPanel.right;
-    targetPanel.right = movingPanel;
+    final right = rightPanel.right;
+    rightPanel.right = null;
+    movingPanel.right = right;
+    rightPanel.right = movingPanel;
 
-    // if (targetCell.hasBottom) {
-    //   targetCell.switchOrientation();
-    //   if (movingCell.hasRight && movingCell.isHorizontal) {
-    //     movingCell.switchOrientation();
-    //   }
-    // }
+    rightPanel.width = sizes.$1;
+    movingPanel.width = sizes.$2;
 
-    targetPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
-    movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
-    targetPanel.width *= 0.5;
-    if (movingPanel.hasRight) {
-      movingPanel.width = (targetPanel.absoluteWidth - HANDLER_SIZE) / rightAbsoluteWidthAfterMove;
-    } else {
-      movingPanel.width = -1;
-    }
     movingPanel.height = -1;
   }
 
   void _positionPanelBottom(WorkspacePanel bottomPanel, WorkspacePanel movingPanel) {
-    final sizes = divideHeightHalf(bottomPanel.absoluteHeight, bottomPanel.height, HANDLER_SIZE);
+    final sizes = divideHalf(bottomPanel.absoluteHeight, bottomPanel.height, HANDLER_SIZE);
 
     movingPanel.bottom = bottomPanel.bottom;
     bottomPanel.bottom = movingPanel;
 
-    bottomPanel.height = sizes.top;
-    movingPanel.height = sizes.bottom;
+    bottomPanel.height = sizes.$1;
+    movingPanel.height = sizes.$2;
     movingPanel.width = -1;
   }
 
@@ -477,7 +462,7 @@ class Workspace {
     final isTopOnBottom = previous.bottom == topPanel;
     final isTopOnRight = previous.right == topPanel;
 
-    final sizes = divideHeightHalf(topPanel.absoluteHeight, topPanel.height, HANDLER_SIZE);
+    final sizes = divideHalf(topPanel.absoluteHeight, topPanel.height, HANDLER_SIZE);
 
     if (topPanel.isRoot) {
     } else {
@@ -493,19 +478,19 @@ class Workspace {
       }
       movingPanel.bottom = topPanel;
 
-      movingPanel.height = sizes.top;
-      topPanel.height = sizes.bottom;
+      movingPanel.height = sizes.$1;
+      topPanel.height = sizes.$2;
 
       movingPanel.width = topPanel.width;
       topPanel.width = -1;
     }
   }
 
-  ({double top, double bottom}) divideHeightHalf(double heightAbsolute, double height, [double innerOffset = 0]) {
-    final heightAbsoluteHalf = 0.5 * heightAbsolute - innerOffset;
-    final heightBottomRelative = 1 / height - 1;
-    final heightBottomAbsolute = heightBottomRelative * heightAbsolute;
-    final heightBottomAbsoluteAfter = heightBottomAbsolute + heightAbsoluteHalf;
-    return (top: height * 0.5, bottom: heightAbsoluteHalf / heightBottomAbsoluteAfter);
+  (double, double) divideHalf(double sizeAbsolute, double size, [double innerOffset = 0]) {
+    final sizeAbsoluteHalf = 0.5 * sizeAbsolute - innerOffset;
+    final sizeSecondRelative = 1 / size - 1;
+    final sizeSecondAbsolute = sizeSecondRelative * sizeAbsolute;
+    final sizeSecondAbsoluteAfter = sizeSecondAbsolute + sizeAbsoluteHalf;
+    return (size * 0.5, sizeAbsoluteHalf / sizeSecondAbsoluteAfter);
   }
 }
