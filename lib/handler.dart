@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:workspace/workspace.dart';
+import 'package:workspace/panel/panel_params.dart';
 
 class Handler extends StatefulWidget {
   const Handler(

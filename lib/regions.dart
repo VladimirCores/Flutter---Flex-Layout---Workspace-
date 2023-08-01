@@ -95,14 +95,14 @@ class _WorkspaceRegionsState extends State<WorkspaceRegions> {
             );
           },
         ),
-        CellRegions(onInside, allowedSides),
+        PanelRegions(onInside, allowedSides),
       ],
     );
   }
 }
 
-class CellRegions extends StatelessWidget {
-  const CellRegions(this.onInside, this.allowedSides, {Key? key}) : super(key: key);
+class PanelRegions extends StatelessWidget {
+  const PanelRegions(this.onInside, this.allowedSides, {Key? key}) : super(key: key);
 
   final Function(Size, PanelRegionSide?) onInside;
   final List<bool> allowedSides;

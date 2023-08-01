@@ -3,31 +3,8 @@ import 'package:workspace/consts/enums.dart';
 import 'package:workspace/handler.dart';
 import 'package:workspace/panel.dart';
 import 'package:workspace/panel/panel_header.dart';
+import 'package:workspace/panel/panel_params.dart';
 import 'package:workspace/regions.dart';
-
-class WorkspaceHandleParams {
-  final ValueNotifier<double> resizer;
-  final double parentSize;
-  final double size;
-  final bool isHorizontal;
-
-  WorkspaceHandleParams(this.resizer, this.parentSize, this.size, this.isHorizontal);
-}
-
-class WorkspacePanelParams {
-  final WorkspacePanel panel;
-  final double parentWidth;
-  final double parentHeight;
-
-  final WorkspaceHandleParams handleParams;
-
-  WorkspacePanelParams(
-    this.panel,
-    this.parentWidth,
-    this.parentHeight,
-    this.handleParams,
-  );
-}
 
 class Workspace {
   Workspace();

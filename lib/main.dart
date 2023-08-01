@@ -4,11 +4,11 @@ import 'package:workspace/panel.dart';
 import 'package:workspace/workspace.dart';
 
 void main() {
-  runApp(WorkspaceLayout());
+  runApp(WorkspaceApp());
 }
 
-class WorkspaceLayout extends StatelessWidget {
-  WorkspaceLayout({super.key}) {
+class WorkspaceApp extends StatelessWidget {
+  WorkspaceApp({super.key}) {
     // generateCell() => LayoutCell(colorCode: rndColorCode());
     generateCell([String title = '']) => WorkspacePanel(widget: Text(title));
     final c0 = generateCell('0');
