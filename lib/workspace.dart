@@ -29,8 +29,8 @@ class LayoutCellParams {
   );
 }
 
-class Layout {
-  Layout();
+class Workspace {
+  Workspace();
 
   int xCount = 0;
   int yCount = 0;

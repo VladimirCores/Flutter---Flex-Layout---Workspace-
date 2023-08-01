@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:workspace/cell/layout_cell.dart';
 import 'package:workspace/inherited.dart';
-import 'package:workspace/layout.dart';
+import 'package:workspace/workspace.dart';
 
 void main() {
   runApp(WorkspaceLayout());
@@ -16,16 +16,16 @@ class WorkspaceLayout extends StatelessWidget {
     final c2 = generateCell('2');
     final c3 = generateCell("3");
 
-    layout.add(c0);
+    workspace.add(c0);
     final c2_right = generateCell('2-r');
-    layout.addRight(layout.root, c1);
-    layout.addBottom(layout.root, c2);
-    layout.addRight(c2, c2_right);
-    layout.addRight(c2_right, generateCell('2-r-r'));
-    layout.addBottom(c2_right, generateCell('2-r-b'));
-    layout.addBottom(c2, generateCell('2-b'));
+    workspace.addRight(workspace.root, c1);
+    workspace.addBottom(workspace.root, c2);
+    workspace.addRight(c2, c2_right);
+    workspace.addRight(c2_right, generateCell('2-r-r'));
+    workspace.addBottom(c2_right, generateCell('2-r-b'));
+    workspace.addBottom(c2, generateCell('2-b'));
     final c1_right = generateCell('1-r');
-    layout.addRight(c1, c1_right);
+    workspace.addRight(c1, c1_right);
     // layout.addRight(c1_right, generateCell('1-r-r'));
     // layout.addBottom(c1_right, c3);
     // layout.addBottom(c3, generateCell('3-b'));
@@ -48,7 +48,7 @@ class WorkspaceLayout extends StatelessWidget {
     // layout.addBottom(c6, generateCell());
   }
 
-  final Layout layout = Layout();
+  final Workspace workspace = Workspace();
 
   // This widget is the root of your application.
   @override
@@ -58,15 +58,15 @@ class WorkspaceLayout extends StatelessWidget {
       title: 'WorkspaceGrid',
       theme: ThemeData(scaffoldBackgroundColor: Colors.black12),
       home: Scaffold(
-        body: LayoutInherited(
-          layout: layout,
+        body: WorkspaceInherited(
+          layout: workspace,
           child: LayoutBuilder(
             builder: (context, constraints) {
               return ValueListenableBuilder(
-                valueListenable: layout.cells,
+                valueListenable: workspace.cells,
                 builder: (_, List<LayoutCell> value, __) {
-                  return layout.positionWidgetsFrom(
-                    layout.root,
+                  return workspace.positionWidgetsFrom(
+                    workspace.root,
                     parentWidth: constraints.maxWidth,
                     parentHeight: constraints.maxHeight,
                   );
