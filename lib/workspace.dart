@@ -462,21 +462,13 @@ class Workspace {
   }
 
   void _positionPanelBottom(WorkspacePanel bottomPanel, WorkspacePanel movingPanel) {
-    final targetAbsoluteHeight = bottomPanel.absoluteHeight;
-    final bottomHeight = 1 / bottomPanel.height - 1;
-    final bottomAbsoluteHeight = bottomHeight * targetAbsoluteHeight;
-    final targetAbsoluteHeightAfterMove = targetAbsoluteHeight * 0.5 - HANDLER_SIZE;
-    final bottomAbsoluteHeightAfterMove = bottomAbsoluteHeight + targetAbsoluteHeightAfterMove;
+    final sizes = divideHeightHalf(bottomPanel.absoluteHeight, bottomPanel.height, HANDLER_SIZE);
 
     movingPanel.bottom = bottomPanel.bottom;
     bottomPanel.bottom = movingPanel;
 
-    print('> \t bottomHeight: ${targetAbsoluteHeight}|${bottomAbsoluteHeight}');
-    bottomPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
-    movingPanel.absoluteHeight = targetAbsoluteHeightAfterMove;
-
-    bottomPanel.height = bottomPanel.height / 2;
-    movingPanel.height = bottomPanel.absoluteHeight / bottomAbsoluteHeightAfterMove;
+    bottomPanel.height = sizes.top;
+    movingPanel.height = sizes.bottom;
     movingPanel.width = -1;
   }
 
@@ -485,14 +477,7 @@ class Workspace {
     final isTopOnBottom = previous.bottom == topPanel;
     final isTopOnRight = previous.right == topPanel;
 
-    final heightAbsolute = topPanel.absoluteHeight;
-    final heightAbsoluteHalf = 0.5 * heightAbsolute - HANDLER_SIZE;
-
-    final heightBottomRelative = 1 / topPanel.height - 1;
-    final heightBottomAbsolute = heightBottomRelative * heightAbsolute;
-    final heightBottomAbsoluteAfter = heightAbsoluteHalf + heightBottomAbsolute;
-
-    print('> \t bottomHeight: ${heightAbsolute}|${heightBottomAbsolute}|${heightBottomAbsoluteAfter}');
+    final sizes = divideHeightHalf(topPanel.absoluteHeight, topPanel.height, HANDLER_SIZE);
 
     if (topPanel.isRoot) {
     } else {
@@ -508,11 +493,19 @@ class Workspace {
       }
       movingPanel.bottom = topPanel;
 
-      movingPanel.height = topPanel.height * 0.5;
-      topPanel.height = heightAbsoluteHalf / heightBottomAbsoluteAfter;
+      movingPanel.height = sizes.top;
+      topPanel.height = sizes.bottom;
 
       movingPanel.width = topPanel.width;
       topPanel.width = -1;
     }
+  }
+
+  ({double top, double bottom}) divideHeightHalf(double heightAbsolute, double height, [double innerOffset = 0]) {
+    final heightAbsoluteHalf = 0.5 * heightAbsolute - innerOffset;
+    final heightBottomRelative = 1 / height - 1;
+    final heightBottomAbsolute = heightBottomRelative * heightAbsolute;
+    final heightBottomAbsoluteAfter = heightBottomAbsolute + heightAbsoluteHalf;
+    return (top: height * 0.5, bottom: heightAbsoluteHalf / heightBottomAbsoluteAfter);
   }
 }
