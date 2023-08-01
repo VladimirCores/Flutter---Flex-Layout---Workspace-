@@ -372,61 +372,26 @@ class Workspace {
     panelRegionSide.value = null;
   }
 
-  void _positionPanelLeft(WorkspacePanel targetPanel, WorkspacePanel movingPanel) {
-    final isTargetRoot = targetPanel.isRoot;
-    final isTargetHorizontal = targetPanel.isHorizontal;
-    print('> LEFT: isTargetRoot = ${isTargetRoot}');
-    print('> \t\t isTargetHorizontal = ${isTargetHorizontal}');
-    print('> \t\t movingCell.previous = ${movingPanel.previous}');
-    if (isTargetRoot) {
-      final bottom = targetPanel.bottom;
-      targetPanel.bottom = null;
-      if (isTargetHorizontal) {
-        movingPanel.bottom = bottom;
-        movingPanel.right = targetPanel;
-      } else {
-        movingPanel.right = targetPanel;
-        movingPanel.bottom = bottom;
-      }
-      movingPanel.absoluteWidth = targetPanel.absoluteWidth;
-      movingPanel.width = targetPanel.width = targetPanel.width * 0.5;
-      movingPanel.height = targetPanel.height;
-    } else {
-      final targetAbsoluteWidth = targetPanel.absoluteWidth;
-      final rightWidth = 1 / targetPanel.width - 1;
-      final rightAbsoluteWidth = rightWidth * targetAbsoluteWidth;
-      final targetAbsoluteWidthAfterMove = targetAbsoluteWidth * 0.5;
-      final rightAbsoluteWidthAfterMove = rightAbsoluteWidth + targetAbsoluteWidthAfterMove;
+  void _positionPanelLeft(WorkspacePanel leftPanel, WorkspacePanel movingPanel) {
+    final sizes = divideHalf(leftPanel.absoluteWidth, leftPanel.width, HANDLER_SIZE);
 
-      targetPanel.absoluteWidth = movingPanel.absoluteWidth = targetAbsoluteWidthAfterMove;
-      movingPanel.width *= 0.5;
+    final isTargetOnBottom = leftPanel.previous!.bottom == leftPanel;
+    final isTargetOnRight = leftPanel.previous!.right == leftPanel;
 
-      if (targetPanel.hasRight) {
-        targetPanel.width = (targetAbsoluteWidthAfterMove - HANDLER_SIZE) / rightAbsoluteWidthAfterMove;
-      } else {
-        movingPanel.width = targetPanel.width = -1;
-      }
+    print('> \t isTargetOnBottom = ${isTargetOnBottom}');
+    print('> \t isTargetOnRight = ${isTargetOnRight}');
 
-      final isTargetOnBottom = targetPanel.previous!.bottom == targetPanel;
-      final isTargetOnRight = targetPanel.previous!.right == targetPanel;
-
-      print('> \t isTargetOnBottom = ${isTargetOnBottom}');
-      print('> \t isTargetOnRight = ${isTargetOnRight}');
-      // if (isMovingCellPrevious) {
-      //   if (targetPanel.previous!.right == targetPanel) {
-      //     targetPanel.previous!.right = movingPanel;
-      //   } else if (targetPanel.previous!.bottom == targetPanel) {
-      //     targetPanel.previous!.bottom = movingPanel;
-      //   }
-      // } else {
-      if (isTargetOnBottom) {
-        targetPanel.previous!.bottom = movingPanel;
-      } else if (isTargetOnRight) {
-        targetPanel.previous!.right = movingPanel;
-      }
-      // }
-      movingPanel.right = targetPanel;
+    if (isTargetOnBottom) {
+      leftPanel.previous!.bottom = movingPanel;
+    } else if (isTargetOnRight) {
+      leftPanel.previous!.right = movingPanel;
     }
+    movingPanel.right = leftPanel;
+
+    movingPanel.width = sizes.$1;
+    leftPanel.width = sizes.$2;
+
+    movingPanel.height = -1;
   }
 
   void _positionPanelRight(WorkspacePanel rightPanel, WorkspacePanel movingPanel) {
@@ -464,26 +429,23 @@ class Workspace {
 
     final sizes = divideHalf(topPanel.absoluteHeight, topPanel.height, HANDLER_SIZE);
 
-    if (topPanel.isRoot) {
-    } else {
-      if (isTopOnBottom) {
-        previous.bottom = movingPanel;
-      } else if (isTopOnRight) {
-        previous.right = movingPanel;
-      }
-      if (topPanel.hasRight) {
-        final right = topPanel.right;
-        topPanel.right = null;
-        movingPanel.right = right;
-      }
-      movingPanel.bottom = topPanel;
-
-      movingPanel.height = sizes.$1;
-      topPanel.height = sizes.$2;
-
-      movingPanel.width = topPanel.width;
-      topPanel.width = -1;
+    if (isTopOnBottom) {
+      previous.bottom = movingPanel;
+    } else if (isTopOnRight) {
+      previous.right = movingPanel;
     }
+    if (topPanel.hasRight) {
+      final right = topPanel.right;
+      topPanel.right = null;
+      movingPanel.right = right;
+    }
+    movingPanel.bottom = topPanel;
+
+    movingPanel.height = sizes.$1;
+    topPanel.height = sizes.$2;
+
+    movingPanel.width = topPanel.width;
+    topPanel.width = -1;
   }
 
   (double, double) divideHalf(double sizeAbsolute, double size, [double innerOffset = 0]) {
