@@ -15,6 +15,9 @@ class WorkspaceApp extends StatelessWidget {
     final c1 = generateCell('1');
     final c2 = generateCell('2');
     final c3 = generateCell("3");
+    final c4 = generateCell("4");
+    final c5 = generateCell("5");
+    final c6 = generateCell("6");
 
     workspace.add(c0);
     final c2_right = generateCell('2-r');
@@ -26,24 +29,24 @@ class WorkspaceApp extends StatelessWidget {
     workspace.addBottom(c2, generateCell('2-b'));
     final c1_right = generateCell('1-r');
     workspace.addRight(c1, c1_right);
-    // workspace.addRight(c1_right, generateCell('1-r-r'));
-    // workspace.addBottom(c1_right, c3);
-    // workspace.addBottom(c3, generateCell('3-b'));
+    workspace.addRight(c1_right, generateCell('1-r-r'));
+    workspace.addBottom(c1_right, c3);
+    workspace.addBottom(c3, generateCell('3-b'));
     final c1_bottom = generateCell('1-b');
-    // final c1_bottom_bottom = generateCell('1-b-b');
-    // final c1_bottom_right = generateCell('1-b-r');
+    final c1_bottom_bottom = generateCell('1-b-b');
+    final c1_bottom_right = generateCell('1-b-r');
     workspace.addBottom(c1, c1_bottom);
-    // workspace.addRight(c1_bottom, c1_bottom_right);
-    // workspace.addBottom(c1_bottom, c1_bottom_bottom);
-    // workspace.addRight(c1_bottom_bottom, generateCell('1-b-b-r'));
-    // workspace.addRight(c1_bottom_right, generateCell('1-b-r-r'));
+    workspace.addRight(c1_bottom, c1_bottom_right);
+    workspace.addBottom(c1_bottom, c1_bottom_bottom);
+    workspace.addRight(c1_bottom_bottom, generateCell('1-b-b-r'));
+    workspace.addRight(c1_bottom_right, generateCell('1-b-r-r'));
     //
     // workspace.addRight(c3, c4);
     // workspace.addRight(c4, generateCell());
-    // //
+    //
     // workspace.addRight(c1, c2);
     // workspace.addBottom(c2, c5);
-    //
+
     // workspace.addRight(c5, c6);
     // workspace.addBottom(c6, generateCell());
   }

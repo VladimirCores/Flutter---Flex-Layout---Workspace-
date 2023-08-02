@@ -93,6 +93,7 @@ class WorkspacePanel {
   }
 
   bool get isRoot => previous == null;
+  bool get isLast => !hasBottom && !hasRight;
   bool get isHorizontal => hasBottom && bottom == order.first;
 
   WorkspacePanel? _right;
