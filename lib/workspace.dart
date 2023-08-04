@@ -78,13 +78,12 @@ class Workspace {
     if (panelDelete.isLast) {
       if (isFromPreviousBottom) {
         panelPrevious.bottom = null;
+        panelPrevious.height = -1;
       } else {
+        print('> \t\t -> disconnect right');
         panelPrevious.right = null;
-      }
-      if (!isFromPreviousBottom) {
         panelPrevious.width = -1;
       }
-      panelPrevious.height = -1;
       return;
     }
 
@@ -96,7 +95,7 @@ class Workspace {
         final bottom = panelDelete.bottom!;
         print('> \t\t -> connect [panelDelete.bottom]');
         connectToPrevious(bottom);
-        bottom.width = bottom.isLast ? -1 : panelDelete.width;
+        bottom.width = bottom.isLast ? panelDelete.width : -1;
         bottom.height = -1;
       } else if (panelDelete.hasRight) {
         // TODO: Implement when will be possible
@@ -105,10 +104,12 @@ class Workspace {
       if (panelDelete.hasBottom) {
         print('> \t\t -> panelDelete.hasBottom');
         final bottom = panelDelete.bottom!;
+        final isBottomHorizontal = bottom.isHorizontal;
         if (panelDelete.hasRight) {
           _connectRightToMostRight(panelDelete, bottom);
         }
         connectToPrevious(bottom);
+        if (isBottomHorizontal) bottom.switchOrientation();
         bottom.height = -1;
       } else if (panelDelete.hasRight) {
         print('> \t\t -> panelDelete.hasRight');
