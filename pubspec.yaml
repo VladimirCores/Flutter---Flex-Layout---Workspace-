@@ -1,10 +1,10 @@
 name: workspace
-description: System that allow multiple panels rearrange to each other.
-
+description: Library that allow multiple panels rearrange to each other.
 version: 0.1.0
+homepage: https://github.com/VladimirCores/Flutter-Flex-Layout-Workspace
 
 environment:
-  sdk: '>=3.0.0-411.0.dev <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
