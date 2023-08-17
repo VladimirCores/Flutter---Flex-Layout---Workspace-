@@ -1,0 +1,25 @@
+name: workspace_example
+description: Example of how to use workspace layout
+version: 0.1.0
+
+environment:
+  sdk: '>=3.0.0-411.0.dev <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  workspace: 0.1.0
+
+dependency_overrides:
+  workspace:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.2
+
+flutter:
+
+  uses-material-design: true

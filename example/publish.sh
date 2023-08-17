@@ -1,0 +1,1 @@
+surge ./build/web cores-flutter-web-worspace-library.surge.sh
