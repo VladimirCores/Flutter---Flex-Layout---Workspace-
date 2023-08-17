@@ -61,10 +61,10 @@ class Workspace {
   _connectRightToMostRight(WorkspacePanel panel, WorkspacePanel panelConnect) {
     WorkspacePanel? right = panelConnect;
     double parentWidth = panel.parentWidth;
-    print('parent width = ${parentWidth}');
+    // print('parent width = ${parentWidth}');
     while (right != null) {
       final rightWidthRelative = right.absoluteWidth / parentWidth;
-      print('right width = ${rightWidthRelative} | ${right.width} | ${right.absoluteWidth}');
+      // print('right width = ${rightWidthRelative} | ${right.width} | ${right.absoluteWidth}');
       right.parentWidth = parentWidth;
       right.width = rightWidthRelative;
       parentWidth -= right.absoluteWidth + _handleSize;
@@ -77,18 +77,18 @@ class Workspace {
   _deletePanelAndRearrangeChildren(WorkspacePanel panelDelete) {
     final panelPrevious = panelDelete.previous!;
     final isFromPreviousBottom = panelPrevious.bottom == panelDelete;
-    print('> _deleteAndRearrange: isFromPreviousBottom = ${isFromPreviousBottom}');
-    print('> \t -> panelDelete.isHorizontal: ${panelDelete.isHorizontal}');
-    print('> \t -> panelDelete.hasBottom = ${panelDelete.hasBottom}');
-    print('> \t -> panelDelete.hasRight: ${panelDelete.hasRight}');
-    print('> \t -> panelDelete.isLast: ${panelDelete.isLast}');
+    // print('> _deleteAndRearrange: isFromPreviousBottom = ${isFromPreviousBottom}');
+    // print('> \t -> panelDelete.isHorizontal: ${panelDelete.isHorizontal}');
+    // print('> \t -> panelDelete.hasBottom = ${panelDelete.hasBottom}');
+    // print('> \t -> panelDelete.hasRight: ${panelDelete.hasRight}');
+    // print('> \t -> panelDelete.isLast: ${panelDelete.isLast}');
 
     if (panelDelete.isLast) {
       if (isFromPreviousBottom) {
         panelPrevious.bottom = null;
         panelPrevious.height = -1;
       } else {
-        print('> \t\t -> disconnect right');
+        // print('> \t\t -> disconnect right');
         panelPrevious.right = null;
         panelPrevious.width = -1;
       }
@@ -101,7 +101,7 @@ class Workspace {
     if (panelDelete.isHorizontal) {
       if (panelDelete.hasBottom) {
         final bottom = panelDelete.bottom!;
-        print('> \t\t -> connect [panelDelete.bottom]');
+        // print('> \t\t -> connect [panelDelete.bottom]');
         connectToPrevious(bottom);
         bottom.width = bottom.isLast ? panelDelete.width : -1;
         bottom.height = -1;
@@ -110,7 +110,7 @@ class Workspace {
       }
     } else {
       if (panelDelete.hasBottom) {
-        print('> \t\t -> panelDelete.hasBottom');
+        // print('> \t\t -> panelDelete.hasBottom');
         final bottom = panelDelete.bottom!;
         final isBottomHorizontal = bottom.isHorizontal;
         if (panelDelete.hasRight) {
@@ -120,7 +120,7 @@ class Workspace {
         if (isBottomHorizontal) bottom.switchOrientation();
         bottom.height = -1;
       } else if (panelDelete.hasRight) {
-        print('> \t\t -> panelDelete.hasRight');
+        // print('> \t\t -> panelDelete.hasRight');
         final right = panelDelete.right!;
         connectToPrevious(right);
         right.width = panelDelete.width + (right.absoluteWidth + _handleSize) / panelDelete.parentWidth;
@@ -129,10 +129,10 @@ class Workspace {
   }
 
   void removePanel(WorkspacePanel panelDelete, {keep = false, willBecomeRoot = false}) {
-    print('> Layout -> removeCell: keep = ${keep}');
+    // print('> Layout -> removeCell: keep = ${keep}');
 
     final hasPrevious = panelDelete.previous != null;
-    print('> \t -> hasPrevious = ${hasPrevious}');
+    // print('> \t -> hasPrevious = ${hasPrevious}');
     if (hasPrevious) {
       _deletePanelAndRearrangeChildren(panelDelete);
       panelDelete.clearConnection();
@@ -142,6 +142,7 @@ class Workspace {
         _items.value.remove(panelDelete);
         _items.value.insert(0, panelDelete);
       }
+      // ignore: invalid_use_of_protected_member
       _items.notifyListeners();
     } else {
       _items.value = _items.value.where((el) => el != panelDelete).toList();
@@ -169,7 +170,7 @@ class Workspace {
           builder: (_, WorkspacePanel? selected, __) {
             final hasSelected = selected != null;
             final isDifferent = selected != panel;
-            // print('> panelContent -> hasSelected: ${hasSelected}');
+            // // print('> panelContent -> hasSelected: ${hasSelected}');
             return hasSelected && isDifferent
                 ? WorkspaceRegions(
                     panel,
@@ -298,13 +299,13 @@ class Workspace {
 
   _onHeaderPointerUp() {
     final canRearrange = panelRegionSide.value?.side != null && selectedPanel.value != null;
-    print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
+    // print('> Layout -> CellHeader - onPointerUp: canRearrange = ${canRearrange}');
     if (canRearrange) {
       final targetPanelSide = panelRegionSide.value?.side;
       final targetPanel = panelRegionSide.value!.panel!;
       final movingPanel = selectedPanel.value!;
 
-      print('> \t panel side: ${targetPanelSide}');
+      // print('> \t panel side: ${targetPanelSide}');
 
       if (REMOVABLE_SIDES.contains(targetPanelSide)) {
         final isTargetSideCanBeRoot = [PanelRegionSide.LEFT, PanelRegionSide.TOP].contains(targetPanelSide);
@@ -339,8 +340,8 @@ class Workspace {
     final isTargetOnBottom = leftPanel.previous!.bottom == leftPanel;
     final isTargetOnRight = leftPanel.previous!.right == leftPanel;
 
-    print('> \t isTargetOnBottom = ${isTargetOnBottom}');
-    print('> \t isTargetOnRight = ${isTargetOnRight}');
+    // print('> \t isTargetOnBottom = ${isTargetOnBottom}');
+    // print('> \t isTargetOnRight = ${isTargetOnRight}');
 
     if (isTargetOnBottom) {
       leftPanel.previous!.bottom = movingPanel;
@@ -358,9 +359,9 @@ class Workspace {
   void _positionPanelRight(WorkspacePanel rightPanel, WorkspacePanel movingPanel) {
     final sizes = divideHalf(rightPanel.absoluteWidth, rightPanel.width, _handleSize);
 
-    print('> \t RIGHT: ${sizes}');
-    print('> \t targetCell.isHorizontal: ${rightPanel.isHorizontal}');
-    print('> \t targetCell.hasRight: ${rightPanel.hasRight}');
+    // print('> \t RIGHT: ${sizes}');
+    // print('> \t targetCell.isHorizontal: ${rightPanel.isHorizontal}');
+    // print('> \t targetCell.hasRight: ${rightPanel.hasRight}');
 
     if (rightPanel.hasRight) {
       final right = rightPanel.right;

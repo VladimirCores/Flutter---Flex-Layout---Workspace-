@@ -64,7 +64,7 @@ class WorkspacePanel {
       final last = order.removeLast();
       order.insert(0, last);
     }
-    print('> LayoutCell -> switchOrientation');
+    // print('> LayoutCell -> switchOrientation');
     return true;
   }
 
@@ -79,7 +79,7 @@ class WorkspacePanel {
   void _appendInstead(WorkspacePanel? value, WorkspacePanel? current) {
     final hasCurrent = current != null;
     final isCurrentFirst = hasCurrent && current == order.first;
-    // print('> LayoutCell -> appendInstead: isCurrentFirst = ${isCurrentFirst}');
+    // // print('> LayoutCell -> appendInstead: isCurrentFirst = ${isCurrentFirst}');
     if (hasCurrent) order.remove(current);
     if (value != null) {
       if (isCurrentFirst) {
@@ -96,7 +96,7 @@ class WorkspacePanel {
 
   WorkspacePanel? _right;
   set right(WorkspacePanel? value) {
-    // print('> LayoutCell -> change right: had|has value = ${hadValue}|${hasValue}');
+    // // print('> LayoutCell -> change right: had|has value = ${hadValue}|${hasValue}');
     _appendInstead(value, _right);
     // _reconnectWithSide(value, _right);
     final hasValue = value != null;
@@ -108,17 +108,6 @@ class WorkspacePanel {
       }
     }
     _right = value;
-  }
-
-  void _reconnectWithSide(WorkspacePanel? panel, WorkspacePanel? side) {
-    final hasValue = panel != null;
-    if (hasValue) {
-      panel.previous = this;
-    } else {
-      if (side != null) {
-        side.previous = null;
-      }
-    }
   }
 
   WorkspacePanel? get right => _right;

@@ -39,7 +39,7 @@ class PanelContent extends StatelessWidget {
                 builder: (_, WorkspacePanel? selected, __) {
                   final hasSelected = selected != null;
                   final isDifferent = selected != panel;
-                  // print('> panelContent -> hasSelected: ${hasSelected}');
+                  // // print('> panelContent -> hasSelected: ${hasSelected}');
                   return hasSelected && isDifferent
                       ? WorkspaceRegions(
                           panel,

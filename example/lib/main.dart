@@ -13,9 +13,9 @@ class WorkspaceApp extends StatelessWidget {
     final c1 = generateCell('1');
     final c2 = generateCell('2');
     final c3 = generateCell("3");
-    final c4 = generateCell("4");
-    final c5 = generateCell("5");
-    final c6 = generateCell("6");
+    // final c4 = generateCell("4");
+    // final c5 = generateCell("5");
+    // final c6 = generateCell("6");
 
     workspace.add(c0);
     final c2_right = generateCell('2-r');

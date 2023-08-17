@@ -24,13 +24,12 @@ class WorkspaceRegions extends StatefulWidget {
 
 class _WorkspaceRegionsState extends State<WorkspaceRegions> {
   final ValueNotifier<PanelRegionSide?> _side = ValueNotifier(null);
-  PanelRegionSide? _connectedCellSide;
   Size? _size;
 
   List<bool> allowedSides = [true, true, true, true];
 
   void onInside(Size size, PanelRegionSide? side) {
-    print('> LayoutRegions -> onInside: ${side} | ${size}');
+    // print('> LayoutRegions -> onInside: ${side} | ${size}');
     _size = size;
     _side.value = side;
     widget.selectedCellRegionSide.value = (panel: widget.panel, side: side);
@@ -48,9 +47,7 @@ class _WorkspaceRegionsState extends State<WorkspaceRegions> {
     final selectedPanel = widget.selectedPanel;
     final panelSideIndex = currentPanel.findCellSideIndex(selectedPanel);
     if (panelSideIndex > -1) {
-      _connectedCellSide = PanelRegionSide.values[panelSideIndex];
       allowedSides[panelSideIndex] = false;
-      print('> LayoutRegions -> initState - Cell position: ${panelSideIndex} | $_connectedCellSide');
     }
     if (widget.panel.isRoot) {
       allowedSides[PanelRegionSide.LEFT.index] = false;
@@ -61,7 +58,7 @@ class _WorkspaceRegionsState extends State<WorkspaceRegions> {
       final hasTwoRowsConnection = currentPanel.hasBottom && currentPanel.hasRight;
       allowedSides[PanelRegionSide.RIGHT.index] = !hasTwoRowsConnection && currentPanel.right != selectedPanel;
     }
-    print('> LayoutRegions -> initState - allowedSides: ${allowedSides}');
+    // print('> LayoutRegions -> initState - allowedSides: ${allowedSides}');
   }
 
   @override

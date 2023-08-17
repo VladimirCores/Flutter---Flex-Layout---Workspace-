@@ -20,7 +20,7 @@ class WorkspaceInherited extends InheritedWidget {
   }
 
   @override
-  bool updateShouldNotify(WorkspaceInherited old) {
+  bool updateShouldNotify(WorkspaceInherited oldWidget) {
     return true;
   }
 }
